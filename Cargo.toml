@@ -2,7 +2,18 @@
 name = "rknock"
 version = "0.1.0"
 edition = "2021"
+default-run = "knock"
+
+[[bin]]
+name = "knock"
+path = "src/knock.rs"
+
+[[bin]]
+name = "door"
+path = "src/door.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ring = "0.16.20"
+data-encoding = "2.3.2"
