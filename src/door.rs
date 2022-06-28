@@ -57,7 +57,9 @@ fn main() -> Result<(), ring::error::Unspecified> {
     };
 
     if verbose {
-        let inonce: u64 = from_utf8(&nonce).unwrap().parse::<u64>().unwrap();
+        // TOOD: inonce should represent epoch seconds eventually
+        // let inonce: u64 = from_utf8(&nonce).unwrap().parse::<u64>().unwrap();
+        let inonce = from_utf8(nonce).unwrap();
         let stag: &str = from_utf8(&tag).unwrap();
         println!(
             "heard: amt={} src={} nonce={} dtag={} {}",
