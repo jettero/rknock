@@ -4,7 +4,7 @@ use ring::hmac;
 
 fn main() {
     let nonce = "nonce";
-    let pass = "supz";
+    let pass = "secret";
     let key = hmac::Key::new(hmac::HMAC_SHA256, pass.as_bytes());
     let tag = hmac::sign(&key, nonce.as_bytes());
     let msg = format!("{}:{}", nonce, BASE64.encode(tag.as_ref()));
