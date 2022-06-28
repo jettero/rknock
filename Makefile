@@ -4,6 +4,9 @@ default: last
 last:
 	@+ make --no-print-directory "$$(cat .last 2>/dev/null || echo run)"
 
+door:
+	cargo run --bin door -- --verbose
+
 door-help:
 	@ echo $@ > .last
 	cargo run --bin door -- --help
