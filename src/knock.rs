@@ -12,6 +12,6 @@ fn main() {
     println!("sending: {}", msg);
 
     let socket = UdpSocket::bind("localhost:1234").expect("couldn't bind to address");
-    socket.connect("localhost:22022").expect("connect function failed");
+    socket.connect("localhost:20022").expect("connect function failed");
     socket.send(msg.as_bytes()).expect("couldn't send message");
 }
