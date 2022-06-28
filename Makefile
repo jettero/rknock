@@ -14,6 +14,7 @@ door-help:
 run:
 	@ echo $@ > .last
 	cargo run --bin door -- --verbose & (sleep 0.5; cargo run --bin knock)
+	@ sleep 0.5; killall -v target/debug/door || true
 
 ubuild:
 	@ echo $@ > .last
