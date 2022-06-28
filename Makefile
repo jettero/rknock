@@ -12,6 +12,11 @@ run:
 	@ echo $@ > .last
 	cargo run --bin door & (sleep 0.5; cargo run --bin knock)
 
+ubuild:
+	@ echo $@ > .last
+	cargo update
+	cargo build
+
 build:
 	@ echo $@ > .last
 	cargo $@
