@@ -13,7 +13,7 @@ door-help:
 
 run:
 	@ echo $@ > .last
-	cargo run --bin door & (sleep 0.5; cargo run --bin knock)
+	cargo run --bin door -- --verbose & (sleep 0.5; cargo run --bin knock)
 
 ubuild:
 	@ echo $@ > .last

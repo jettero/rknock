@@ -45,8 +45,12 @@ fn main() -> Result<(), ring::error::Unspecified> {
     let mut buf = [0; 256];
     let (amt, src) = socket.recv_from(&mut buf).expect("couldn't read from buffer");
     let (nonce, tag) = split_payload(&buf[..amt]).unwrap();
-    let dtag = BASE64.decode(tag).unwrap();
 
+    if verbose {
+        println!("heard something, checking");
+    }
+
+    let dtag = BASE64.decode(tag).unwrap();
     let verified = match hmac::verify(&key, &nonce, &dtag) {
         Ok(_) => true,
         Err(_) => false,
