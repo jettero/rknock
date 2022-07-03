@@ -5,6 +5,10 @@ use std::io::ErrorKind;
 use std::net::UdpSocket;
 use std::str::from_utf8;
 
+extern crate log;
+use syslog::{Facility, Formatter3164, BasicLogger};
+use log::{LevelFilter, info};
+
 fn split_payload(buf: &[u8]) -> Result<(&[u8], &[u8]), std::io::ErrorKind> {
     for (i, &v) in buf.iter().enumerate() {
         if v == b':' {
@@ -32,6 +36,19 @@ fn get_args() -> (bool, String, String) {
 }
 
 fn main() -> Result<(), ring::error::Unspecified> {
+    let formatter = Formatter3164 {
+        facility: Facility::LOG_DAEMON,
+        process: "knock-door".into(),
+        hostname: None,
+        pid: 0,
+    };
+
+    let logger = syslog::unix(formatter).unwrap();
+
+    log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
+        .map(|()| log::set_max_level(LevelFilter::Info))
+        .expect("logging setup failure");
+
     let (verbose, key_str, listen) = get_args();
     let socket = UdpSocket::bind(listen.as_str()).expect("couldn't bind to socket");
     let key = hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes());
@@ -39,7 +56,7 @@ fn main() -> Result<(), ring::error::Unspecified> {
     if verbose {
         // we use listen.as_str() above so we don't "move" listen to the bind()
         // if we did, we'd get an error about using listen after move on the next line
-        println!("listening to {}", listen);
+        info!("listening to {}", listen);
     }
 
     let mut buf = [0; 256];
