@@ -18,3 +18,5 @@ path = "src/door.rs"
 ring = "0.16.20"
 data-encoding = "2.3.2"
 clap = "3.2.6"
+syslog = "^6.0"
+log = { version = "0.4.17", features = [ "std" ] }
