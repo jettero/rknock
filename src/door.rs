@@ -15,24 +15,17 @@ fn split_payload(buf: &[u8]) -> Result<(&[u8], &[u8]), std::io::ErrorKind> {
             return Ok((&buf[..i], &buf[i + 1..]));
         }
     }
+
     Err(ErrorKind::NotFound)
 }
 
-fn listen_to_msgs(verbose: bool, listen: String, key: &hmac::Key) {
-    let socket = UdpSocket::bind(listen.as_str()).expect("couldn't bind to socket");
-
-    if verbose {
-        // we use listen.as_str() above so we don't "move" listen to the bind()
-        // if we did, we'd get an error about using listen after move on the next line
-        info!("listening to {}", listen);
-    }
-
+fn recv_one_payload(verbose: bool, socket: UdpSocket, key: &hmac::Key) {
     let mut buf = [0; 256];
     let (amt, src) = socket.recv_from(&mut buf).expect("couldn't read from buffer");
     let (nonce, tag) = split_payload(&buf[..amt]).unwrap();
 
     if verbose {
-        println!("heard something, checking");
+        info!("heard something, checking");
     }
 
     let dtag = BASE64.decode(tag).unwrap();
@@ -46,6 +39,7 @@ fn listen_to_msgs(verbose: bool, listen: String, key: &hmac::Key) {
         // let inonce: u64 = from_utf8(&nonce).unwrap().parse::<u64>().unwrap();
         let inonce = from_utf8(nonce).unwrap();
         let stag: &str = from_utf8(&tag).unwrap();
+
         println!(
             "heard: amt={} src={} nonce={} dtag={} {}",
             amt,
@@ -58,6 +52,18 @@ fn listen_to_msgs(verbose: bool, listen: String, key: &hmac::Key) {
             }
         );
     }
+}
+
+fn listen_to_msgs(verbose: bool, listen: String, key: &hmac::Key) {
+    let socket = UdpSocket::bind(listen.as_str()).expect("couldn't bind to socket");
+
+    if verbose {
+        // we use listen.as_str() above so we don't "move" listen to the bind()
+        // if we did, we'd get an error about using listen after move on the next line
+        info!("listening to {}", listen);
+    }
+
+    recv_one_payload(verbose, socket, &key);
 }
 
 fn get_args() -> (bool, String, String) {
