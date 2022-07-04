@@ -4,6 +4,7 @@ use ring::hmac;
 use std::io::ErrorKind;
 use std::net::UdpSocket;
 use std::str::from_utf8;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 extern crate log;
 use syslog::{Facility, Formatter3164, BasicLogger};
@@ -12,7 +13,7 @@ use log::{LevelFilter, info};
 fn split_payload(buf: &[u8]) -> Result<(&[u8], &[u8]), std::io::ErrorKind> {
     for (i, &v) in buf.iter().enumerate() {
         if v == b':' {
-            return Ok((&buf[..i], &buf[i + 1..]));
+            return Ok((&buf[..i], &buf[i + 1..]))
         }
     }
 
@@ -22,25 +23,48 @@ fn split_payload(buf: &[u8]) -> Result<(&[u8], &[u8]), std::io::ErrorKind> {
 fn recv_one_payload(verbose: bool, socket: &UdpSocket, key: &hmac::Key) {
     let mut buf = [0; 256];
     let (amt, src) = socket.recv_from(&mut buf).expect("couldn't read from buffer");
-    let (nonce, tag) = split_payload(&buf[..amt]).unwrap();
 
-    if verbose {
-        info!("heard something, checking");
+    macro_rules! vs {
+        ($($say:expr),*) => {
+            if verbose {
+                info!($( $say ),*)
+            }
+        }
     }
 
-    let dtag = BASE64.decode(tag).unwrap();
+    let (nonce, tag) = match split_payload(&buf[..amt]) { Ok(v) => v, Err(_) => { vs!("invalid payload"); return }};
+    let snonce = match from_utf8(nonce) { Ok(s) => s, Err(_) => { vs!("invalid nonce"); return }};
+    let dtag = match BASE64.decode(tag) { Ok(b) => b, Err(_) => { vs!("invalid tag(1)"); return }};
+    let stag = match from_utf8(tag) { Ok(s) => s, Err(_) => { vs!("invalid tag(2)"); return }};
+
+    vs!("heard {} bytes from {}, checking", amt, src);
+
     let verified = match hmac::verify(&key, &nonce, &dtag) {
-        Ok(_) => true,
+        Ok(_) => {
+            match snonce.parse::<u64>() {
+                Ok(inonce) => {
+                    let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("systemtime fucked").as_secs();
+                    if inonce != now && inonce != (now -1) {
+                        if verbose {
+                            vs!("nonce=\"{}\" seems not to be a current time value ({})", inonce, now);
+                        }
+                        false
+                    } else {
+                        true
+                    }
+                }
+                Err(_) => {
+                    if verbose {
+                        vs!("nonce=\"{}\" seems not to be an integer value", snonce);
+                    }
+                    false
+                }
+            }
+        }
         Err(_) => false,
     };
 
-    // TOOD: inonce should represent epoch seconds eventually
-    // let inonce: u64 = from_utf8(&nonce).unwrap().parse::<u64>().unwrap();
-
     if verbose {
-        let snonce = from_utf8(nonce).unwrap();
-        let stag: &str = from_utf8(&tag).unwrap();
-
         println!(
             "heard: amt={} src={} nonce={} dtag={} {}",
             amt,
@@ -48,8 +72,8 @@ fn recv_one_payload(verbose: bool, socket: &UdpSocket, key: &hmac::Key) {
             snonce,
             stag,
             match verified {
-                true => "verified",
-                false => "invalid signature",
+                true => "VERIFIED",
+                false => "<fail>",
             }
         );
     }
@@ -58,9 +82,9 @@ fn recv_one_payload(verbose: bool, socket: &UdpSocket, key: &hmac::Key) {
 fn listen_to_msgs(verbose: bool, listen: String, key: &hmac::Key) {
     let socket = UdpSocket::bind(listen.as_str()).expect("couldn't bind to socket");
 
+    // we use listen.as_str() above so we don't "move" listen to the bind()
+    // if we did, we'd get an error about using listen after move on the next line
     if verbose {
-        // we use listen.as_str() above so we don't "move" listen to the bind()
-        // if we did, we'd get an error about using listen after move on the next line
         info!("listening to {}", listen);
     }
 

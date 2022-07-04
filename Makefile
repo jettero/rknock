@@ -13,7 +13,8 @@ door-help:
 
 run:
 	@ echo $@ > .last
-	cargo run --bin door -- --verbose & (sleep 0.5; cargo run --bin knock)
+	cargo run --bin door -- --verbose &
+	for i in 1 2 3; do sleep 0.5; cargo run --bin knock; done
 	@ sleep 0.5; echo -n make sure no doors are left running:; killall -v target/debug/door || true
 
 ubuild:
