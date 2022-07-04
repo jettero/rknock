@@ -34,17 +34,18 @@ fn recv_one_payload(verbose: bool, socket: UdpSocket, key: &hmac::Key) {
         Err(_) => false,
     };
 
+    // TOOD: inonce should represent epoch seconds eventually
+    // let inonce: u64 = from_utf8(&nonce).unwrap().parse::<u64>().unwrap();
+
     if verbose {
-        // TOOD: inonce should represent epoch seconds eventually
-        // let inonce: u64 = from_utf8(&nonce).unwrap().parse::<u64>().unwrap();
-        let inonce = from_utf8(nonce).unwrap();
+        let snonce = from_utf8(nonce).unwrap();
         let stag: &str = from_utf8(&tag).unwrap();
 
         println!(
             "heard: amt={} src={} nonce={} dtag={} {}",
             amt,
             src,
-            inonce,
+            snonce,
             stag,
             match verified {
                 true => "verified",
@@ -63,7 +64,9 @@ fn listen_to_msgs(verbose: bool, listen: String, key: &hmac::Key) {
         info!("listening to {}", listen);
     }
 
-    recv_one_payload(verbose, socket, &key);
+    while true {
+        recv_one_payload(verbose, socket, &key);
+    }
 }
 
 fn get_args() -> (bool, String, String) {
