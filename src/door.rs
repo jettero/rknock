@@ -49,7 +49,7 @@ fn recv_one_payload(verbose: bool, socket: UdpSocket, key: &hmac::Key) {
             stag,
             match verified {
                 true => "verified",
-                false => "FAILCOPTER",
+                false => "invalid signature",
             }
         );
     }
