@@ -11,11 +11,22 @@ door-help:
 	@ echo $@ > .last
 	cargo run --bin door -- --help
 
-run:
+listen: no-listen
 	@ echo $@ > .last
 	cargo run --bin door -- --verbose &
+
+no-listen:
+	@ echo -n "stop listen: "; killall -v target/debug/door || true
+
+spam: listen
+	@ echo $@ > .last
+	for i in msg1 msg:2 msg3; do echo $$i | nc -q1 -u localhost 20022; done
+	@+make --no-print-directory no-listen
+
+run: listen
+	@ echo $@ > .last
 	for i in 1 2 3; do sleep 0.5; cargo run --bin knock; done
-	@ sleep 0.5; echo -n make sure no doors are left running:; killall -v target/debug/door || true
+	@+make --no-print-directory no-listen
 
 ubuild:
 	@ echo $@ > .last

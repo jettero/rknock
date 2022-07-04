@@ -32,45 +32,35 @@ fn recv_one_payload(verbose: bool, socket: &UdpSocket, key: &hmac::Key) {
         }
     }
 
+    vs!("{} sent {} bytes, \"{}\"", src, amt, String::from_utf8_lossy(&buf[..amt-1]));
+
     let (nonce, tag) = match split_payload(&buf[..amt]) { Ok(v) => v, Err(_) => { vs!("invalid payload"); return }};
-    let snonce = match from_utf8(nonce) { Ok(s) => s, Err(_) => { vs!("invalid nonce"); return }};
-    let dtag = match BASE64.decode(tag) { Ok(b) => b, Err(_) => { vs!("invalid tag(1)"); return }};
-    let stag = match from_utf8(tag) { Ok(s) => s, Err(_) => { vs!("invalid tag(2)"); return }};
+    let snonce = match from_utf8(nonce) { Ok(s) => s, Err(_) => { vs!("invalid nonce(!utf8)"); return }};
+    let dtag = match BASE64.decode(tag) { Ok(b) => b, Err(_) => { vs!("invalid tag"); return }};
 
-    vs!("heard {} bytes from {}, checking", amt, src);
-
-    let verified = match hmac::verify(&key, &nonce, &dtag) {
+    match hmac::verify(&key, &nonce, &dtag) {
         Ok(_) => {
             match snonce.parse::<u64>() {
                 Ok(inonce) => {
                     let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("systemtime fucked").as_secs();
                     if inonce != now && inonce != (now -1) {
-                        vs!("nonce=\"{}\" seems not to be a current time value ({})", inonce, now);
-                        false
-                    } else {
-                        true
+                        vs!("invalid nonce(!now)");
+                        return
                     }
                 }
                 Err(_) => {
-                    vs!("nonce=\"{}\" seems not to be an integer value", snonce);
-                    false
+                    vs!("invalid nonce(!u64)");
+                    return
                 }
             }
         }
-        Err(_) => false,
+        Err(_) => {
+            vs!("invalid signature");
+            return
+        }
     };
 
-    vs!(
-        "heard: amt={} src={} nonce={} dtag={} {}",
-        amt,
-        src,
-        snonce,
-        stag,
-        match verified {
-            true => "VERIFIED",
-            false => "<fail>",
-        }
-    );
+    info!("{} VERIFIED", src); // info! not vs! ... we really want to talk about this
 }
 
 fn listen_to_msgs(verbose: bool, listen: String, key: &hmac::Key) {
