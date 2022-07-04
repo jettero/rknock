@@ -45,18 +45,14 @@ fn recv_one_payload(verbose: bool, socket: &UdpSocket, key: &hmac::Key) {
                 Ok(inonce) => {
                     let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("systemtime fucked").as_secs();
                     if inonce != now && inonce != (now -1) {
-                        if verbose {
-                            vs!("nonce=\"{}\" seems not to be a current time value ({})", inonce, now);
-                        }
+                        vs!("nonce=\"{}\" seems not to be a current time value ({})", inonce, now);
                         false
                     } else {
                         true
                     }
                 }
                 Err(_) => {
-                    if verbose {
-                        vs!("nonce=\"{}\" seems not to be an integer value", snonce);
-                    }
+                    vs!("nonce=\"{}\" seems not to be an integer value", snonce);
                     false
                 }
             }
@@ -64,19 +60,17 @@ fn recv_one_payload(verbose: bool, socket: &UdpSocket, key: &hmac::Key) {
         Err(_) => false,
     };
 
-    if verbose {
-        println!(
-            "heard: amt={} src={} nonce={} dtag={} {}",
-            amt,
-            src,
-            snonce,
-            stag,
-            match verified {
-                true => "VERIFIED",
-                false => "<fail>",
-            }
-        );
-    }
+    vs!(
+        "heard: amt={} src={} nonce={} dtag={} {}",
+        amt,
+        src,
+        snonce,
+        stag,
+        match verified {
+            true => "VERIFIED",
+            false => "<fail>",
+        }
+    );
 }
 
 fn listen_to_msgs(verbose: bool, listen: String, key: &hmac::Key) {
