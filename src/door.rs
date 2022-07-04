@@ -19,7 +19,7 @@ fn split_payload(buf: &[u8]) -> Result<(&[u8], &[u8]), std::io::ErrorKind> {
     Err(ErrorKind::NotFound)
 }
 
-fn recv_one_payload(verbose: bool, socket: UdpSocket, key: &hmac::Key) {
+fn recv_one_payload(verbose: bool, socket: &UdpSocket, key: &hmac::Key) {
     let mut buf = [0; 256];
     let (amt, src) = socket.recv_from(&mut buf).expect("couldn't read from buffer");
     let (nonce, tag) = split_payload(&buf[..amt]).unwrap();
@@ -64,8 +64,8 @@ fn listen_to_msgs(verbose: bool, listen: String, key: &hmac::Key) {
         info!("listening to {}", listen);
     }
 
-    while true {
-        recv_one_payload(verbose, socket, &key);
+    loop {
+        recv_one_payload(verbose, &socket, &key);
     }
 }
 
