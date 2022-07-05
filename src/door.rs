@@ -7,18 +7,8 @@ use std::str::from_utf8;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 extern crate log;
-use log::{info, LevelFilter};
+use log::{LevelFilter, info, debug};
 use syslog::{BasicLogger, Facility, Formatter3164};
-
-static mut HORRIBLE_PURE_EVIL_GLOBAL_FLAG_VERBOSE: bool = false;
-
-macro_rules! vs {
-    ($($say:expr),*) => {
-        if unsafe{ HORRIBLE_PURE_EVIL_GLOBAL_FLAG_VERBOSE } {
-            info!($( $say ),*)
-        }
-    }
-}
 
 fn split_payload(buf: &[u8]) -> Result<(&[u8], &[u8]), std::io::ErrorKind> {
     for (i, &v) in buf.iter().enumerate() {
@@ -31,26 +21,26 @@ fn split_payload(buf: &[u8]) -> Result<(&[u8], &[u8]), std::io::ErrorKind> {
 }
 
 fn process_payload(amt: usize, src: String, buf: &[u8], key: &hmac::Key) -> bool {
-    vs!("{} sent {} bytes, \"{}\"", src, amt, String::from_utf8_lossy(&buf));
+    debug!("{} sent {} bytes, \"{}\"", src, amt, String::from_utf8_lossy(&buf));
 
     let (nonce, tag) = match split_payload(&buf) {
         Ok(v) => v,
         Err(e) => {
-            vs!("invalid payload: {}", e);
+            debug!("invalid payload: {}", e);
             return false;
         }
     };
     let snonce = match from_utf8(nonce) {
         Ok(s) => s,
         Err(e) => {
-            vs!("invalid nonce(!utf8): {}", e);
+            debug!("invalid nonce(!utf8): {}", e);
             return false;
         }
     };
     let dtag = match BASE64.decode(tag) {
         Ok(b) => b,
         Err(e) => {
-            vs!("invalid tag: {}", e);
+            debug!("invalid tag: {}", e);
             return false;
         }
     };
@@ -63,22 +53,22 @@ fn process_payload(amt: usize, src: String, buf: &[u8], key: &hmac::Key) -> bool
                     .expect("systemtime fucked")
                     .as_secs();
                 if inonce != now && inonce != (now - 1) {
-                    vs!("invalid nonce(!now)");
+                    debug!("invalid nonce(!now)");
                     return false;
                 }
             }
             Err(_) => {
-                vs!("invalid nonce(!u64)");
+                debug!("invalid nonce(!u64)");
                 return false;
             }
         },
         Err(_) => {
-            vs!("invalid signature");
+            debug!("invalid signature");
             return false;
         }
     };
 
-    info!("{} VERIFIED", src); // info! not vs! ... we really want to talk about this
+    info!("{} VERIFIED", src);
     return true;
 }
 
@@ -88,7 +78,7 @@ fn listen_to_msgs(listen: String, key: &hmac::Key) {
 
     // we use listen.as_str() above so we don't "move" listen to the bind()
     // if we did, we'd get an error about using listen after move on the next line
-    vs!("listening to {}", listen);
+    info!("listening to {}", listen);
 
     loop {
         let (amt, src) = socket.recv_from(&mut buf).expect("couldn't read from buffer");
@@ -99,7 +89,7 @@ fn listen_to_msgs(listen: String, key: &hmac::Key) {
     }
 }
 
-fn get_args() -> (String, String) {
+fn get_args() -> (bool, String, String) {
     let matches = App::new("door is door")
         .version("0.0.0")
         .author("Paul Miller <paul@jettero.pl>")
@@ -117,9 +107,7 @@ fn get_args() -> (String, String) {
         )
         .get_matches();
 
-    unsafe {
-        HORRIBLE_PURE_EVIL_GLOBAL_FLAG_VERBOSE = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
-    }
+    let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
 
     let key = matches
         .get_one::<String>("secret")
@@ -130,7 +118,7 @@ fn get_args() -> (String, String) {
         .expect("defaulted by clap")
         .to_string();
 
-    return (key, listen);
+    return (verbose, key, listen);
 }
 
 fn main() -> Result<(), ring::error::Unspecified> {
@@ -141,14 +129,30 @@ fn main() -> Result<(), ring::error::Unspecified> {
         pid: 0,
     };
 
+    let (verbose, key_str, listen) = get_args();
+    let key = hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes());
+
     let logger = syslog::unix(formatter).unwrap();
 
-    log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
-        .map(|()| log::set_max_level(LevelFilter::Info))
-        .expect("logging setup failure");
+    /*
+     * rust really hates globals
+     *
+     * if we avoid using a global VERBOSE -- to avoid using unsafe {} and
+     * static mut ... then this code won't look like such horrible evil; but
+     * it'll still be using unsafe globals; just, hidden behind a std library.
+     *
+     * reading this with some slight disbelief?
+     *
+     * https://docs.rs/log/0.3.8/src/log/lib.rs.html
+     *
+     * (Sometimes globals are completely appropriate, fuck you rust; or at the
+     * very least, fuck the people that think they're not.)
+     *
+     */
 
-    let (key_str, listen) = get_args();
-    let key = hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes());
+    log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
+        .map(|()| log::set_max_level(match verbose { true => LevelFilter::Debug, false => LevelFilter::Info }))
+        .expect("logging setup failure");
 
     listen_to_msgs(listen, &key);
 
