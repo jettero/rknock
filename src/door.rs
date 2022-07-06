@@ -90,7 +90,7 @@ fn listen_to_msgs(listen: String, key: &hmac::Key) {
 }
 
 fn get_args() -> (bool, String, String) {
-    let matches = App::new("door is door")
+    let matches = App::new("door")
         .version("0.0.0")
         .author("Paul Miller <paul@jettero.pl>")
         .about("Watches the doors and listens for the secret codes")
