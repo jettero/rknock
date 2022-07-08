@@ -19,7 +19,7 @@ listen: no-listen
 	cargo run --bin door -- --verbose &
 
 no-listen:
-	@ echo -n "stop listen: "; killall -v target/debug/door || true
+	@ echo -n "stop listen: "; pkill -ef target/debug/door || true
 
 spam: listen
 	@ echo $@ > $(LAST_FILE)
