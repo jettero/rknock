@@ -7,8 +7,8 @@ default: last
 last:
 	@+ make --no-print-directory "$$(cat $(LAST_FILE) 2>/dev/null || echo run)"
 
-door:
-	cargo run --bin door -- --verbose
+door knock:
+	cargo run --bin $@ -- --verbose
 
 %-help:
 	@ echo $@ > $(LAST_FILE)
