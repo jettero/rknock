@@ -2,7 +2,7 @@
 GIT_DIR := $(shell git rev-parse --git-dir)
 LAST_FILE := $(GIT_DIR)/info/last-make
 
-default: last
+default: build # last
 
 last:
 	@+ make --no-print-directory "$$(cat $(LAST_FILE) 2>/dev/null || echo run)"
