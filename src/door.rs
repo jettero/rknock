@@ -137,15 +137,16 @@ fn main() -> Result<(), ring::error::Unspecified> {
     /*
      * rust really hates globals
      *
-     * if we avoid using a global VERBOSE -- to avoid using unsafe {} and
-     * static mut ... then this code won't look like such horrible evil; but
-     * it'll still be using unsafe globals; just, hidden behind a std library.
+     * If we avoid using a global VERBOSE — to avoid using unsafe {} and static
+     * mut … then this code won't look like such horrible evil; but it'll still
+     * be using unsafe globals; just, hidden behind a std library.
      *
-     * reading this with some slight disbelief?
+     * Reading this with some slight disbelief? This is exactly how they do it
+     * in the std library:
      *
-     * https://docs.rs/log/0.3.8/src/log/lib.rs.html
+     *    https://docs.rs/log/0.3.8/src/log/lib.rs.html
      *
-     * (Sometimes globals are completely appropriate, fuck you rust; or at the
+     * (Sometimes globals are completely appropriate. Fuck you rust … or at the
      * very least, fuck the people that think they're not.)
      *
      */
