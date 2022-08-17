@@ -19,7 +19,7 @@ listen: no-listen
 	cargo run --bin door -- --verbose &
 
 stop no-listen:
-	@ echo -n "stop listen: "; pkill -ef target/debug/door || :
+	fuser -vkn udp 20022 || :
 
 spam: listen
 	@ echo $@ > $(LAST_FILE)
