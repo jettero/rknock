@@ -30,6 +30,7 @@ fn process_payload(amt: usize, src: String, buf: &[u8], key: &hmac::Key) -> bool
             return false;
         }
     };
+
     let snonce = match from_utf8(nonce) {
         Ok(s) => s,
         Err(e) => {
@@ -37,6 +38,7 @@ fn process_payload(amt: usize, src: String, buf: &[u8], key: &hmac::Key) -> bool
             return false;
         }
     };
+
     let dtag = match BASE64.decode(tag) {
         Ok(b) => b,
         Err(e) => {
@@ -113,6 +115,7 @@ fn get_args() -> (bool, String, String) {
         .get_one::<String>("secret")
         .expect("defaulted by clap")
         .to_string();
+
     let listen = matches
         .get_one::<String>("listen")
         .expect("defaulted by clap")
@@ -131,7 +134,6 @@ fn main() -> Result<(), ring::error::Unspecified> {
 
     let (verbose, key_str, listen) = get_args();
     let key = hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes());
-
     let logger = syslog::unix(formatter).unwrap();
 
     /*
