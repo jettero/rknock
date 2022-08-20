@@ -18,5 +18,4 @@ repos:
     entry: rustfmt
     language: system
     types: [rust]
-    always_run: true
     pass_filenames: false
