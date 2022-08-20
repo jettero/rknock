@@ -1,19 +1,21 @@
-use clap::{App, ArgAction, arg, value_parser, crate_authors, crate_version };
-use std::net::{UdpSocket,Ipv4Addr};
+use clap::{App, ArgAction, arg, value_parser, crate_authors, crate_version};
+use std::net::{UdpSocket, Ipv4Addr};
 use data_encoding::BASE64;
 use ring::hmac;
 use std::time::{SystemTime, UNIX_EPOCH};
+use exec::execvp;
 
-fn get_args() -> (bool, String, String) {
+fn get_args() -> (bool, bool, String, String) {
     let matches = App::new("knock")
         .version(crate_version!())
         .author(crate_authors!(", "))
         .about("knock on doors")
         .arg(arg!(verbose: -v --verbose).action(ArgAction::SetTrue))
+        .arg(arg!(goto: -g --goto-host).action(ArgAction::SetTrue))
         .arg(
             arg!(target: -t --target)
-            .value_parser(value_parser!(String))
-            .default_value("localhost:20022")
+                .value_parser(value_parser!(String))
+                .default_value("localhost:20022")
         )
         .arg(
             arg!(secret: -s --secret)
@@ -23,6 +25,7 @@ fn get_args() -> (bool, String, String) {
         .get_matches();
 
     let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
+    let goto    = *matches.get_one::<bool>("goto").expect("defaulted by clap");
 
     let key = matches
         .get_one::<String>("secret")
@@ -34,11 +37,11 @@ fn get_args() -> (bool, String, String) {
         .expect("defaulted by clap")
         .to_string();
 
-    return (verbose, key, target);
+    return (verbose, goto, key, target);
 }
 
 fn main() {
-    let (verbose, key_str, target) = get_args();
+    let (verbose, goto, key_str, target) = get_args();
     let key = hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes());
     let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("systemtime fucked").as_secs();
     let nonce = format!("{}", now);
@@ -50,6 +53,11 @@ fn main() {
     }
 
     let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).expect("couldn't bind to address");
-    socket.connect(target).expect("connect function failed");
+    socket.connect(&target).expect("connect function failed");
     socket.send(msg.as_bytes()).expect("couldn't send message");
+
+    if goto {
+        let err = execvp("ssh", &["ssh", &target]);
+        println!("execvp(ssh {}) error: {}", target, err);
+    }
 }
