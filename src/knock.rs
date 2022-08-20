@@ -24,7 +24,9 @@ fn get_args() -> (bool, bool, String, String) {
         )
         .get_matches();
 
-    let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
+    let verbose = *matches
+        .get_one::<bool>("verbose")
+        .expect("defaulted by clap");
     let goto = *matches.get_one::<bool>("goto").expect("defaulted by clap");
 
     let key = matches

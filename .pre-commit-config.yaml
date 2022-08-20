@@ -18,4 +18,4 @@ repos:
     entry: rustfmt
     language: system
     types: [rust]
-    pass_filenames: false
+    pass_filenames: true
