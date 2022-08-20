@@ -1,3 +1,8 @@
+# vi:ft=toml:
+#
+# See more keys and their definitions at
+#   https://doc.rust-lang.org/cargo/reference/manifest.html
+
 [package]
 name = "rust-door-knocker"
 version = "0.1.0"
@@ -11,8 +16,6 @@ path = "src/knock.rs"
 [[bin]]
 name = "door"
 path = "src/door.rs"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 exec = "0.3.1"
