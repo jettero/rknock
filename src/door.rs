@@ -7,7 +7,7 @@ use std::str::from_utf8;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 extern crate log;
-use log::{LevelFilter, info, debug};
+use log::{debug, info, LevelFilter};
 use syslog::{BasicLogger, Facility, Formatter3164};
 
 fn split_payload(buf: &[u8]) -> Result<(&[u8], &[u8]), std::io::ErrorKind> {
@@ -154,7 +154,12 @@ fn main() -> Result<(), ring::error::Unspecified> {
      */
 
     log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
-        .map(|()| log::set_max_level(match verbose { true => LevelFilter::Debug, false => LevelFilter::Info }))
+        .map(|()| {
+            log::set_max_level(match verbose {
+                true => LevelFilter::Debug,
+                false => LevelFilter::Info,
+            })
+        })
         .expect("logging setup failure");
 
     listen_to_msgs(listen, &key);
