@@ -2,9 +2,10 @@ use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction};
 use data_encoding::BASE64;
 use exec::execvp;
 use ring::hmac;
+use std::fs;
 use std::net::{Ipv4Addr, UdpSocket};
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::fs;
+use std::env;
 
 fn get_args() -> (bool, bool, String, String) {
     let matches = App::new("knock")
@@ -55,11 +56,11 @@ fn get_key(mut key_str: String) -> hmac::Key {
         key_str = key_str.trim().to_string();
     }
 
-    return hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes())
+    return hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes());
 }
 
 fn main() {
-    let (verbose, go, key_str, target) = get_args();
+    let (verbose, go, key_str, mut target) = get_args();
     let key = get_key(key_str);
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -69,16 +70,21 @@ fn main() {
     let tag = hmac::sign(&key, nonce.as_bytes());
     let msg = format!("{}:{}", nonce, BASE64.encode(tag.as_ref()));
 
+    if !target.contains(":") {
+        target = target + ":20022"
+    }
+
     if verbose {
         println!("send(\"{}\") → {}", msg, target);
     }
 
     let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).expect("couldn't bind to 0.0.0.0:0 address");
+
     socket.connect(&target).expect("connect function failed");
     socket.send(msg.as_bytes()).expect("couldn't send message");
 
     if go {
-        let err = execvp("ssh", &["ssh", &target]);
-        println!("execvp(ssh {}) error: {}", target, err);
+       let err = execvp("ssh", &["ssh", &target]);
+       panic!("execvp(ssh {}) error: {}", target, err);
     }
 }
