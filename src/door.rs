@@ -101,10 +101,10 @@ fn listen_to_msgs(listen: String, key: &hmac::Key, command: &String) {
             let vars = HashMap::from([("ip".to_string(), src)]);
             let cmd = strfmt(&command, &vars).unwrap();
 
-            info!("exec({})", cmd);
+            debug!("exec({})", cmd);
             let child = Command::new("sh")
                 .arg("-c")
-                .arg(cmd)
+                .arg(&cmd)
                 .current_dir("/")
                 .stdin(Stdio::null())
                 .stdout(Stdio::piped())
@@ -115,9 +115,13 @@ fn listen_to_msgs(listen: String, key: &hmac::Key, command: &String) {
             let output = child.wait_with_output().expect("failed to wait for child");
 
             if !output.status.success() {
-                error!("  status: {}", output.status);
-                error!("  stdout: {}", String::from_utf8_lossy(&output.stdout));
-                error!("  stderr: {}", String::from_utf8_lossy(&output.stderr));
+                error!(
+                    "fail({}) status={}\n  stdout: {}\n  stderr: {}",
+                    &cmd,
+                    output.status,
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr),
+                );
             }
         }
     }
@@ -149,13 +153,14 @@ fn get_args() -> (bool, bool, String, String, String) {
             arg!(command: -c --command <SHELL_COMMAND> "The command to execute after a verified message is received. \
             Can also be set via KNOCK_DOOR_COMMAND. Note that the source IP will be passed via format!() \
             to this command string, so brace characters must be escaped (doubled) and the command should contain \
-            {{ip}} if applicable to the command.")
+            {ip} if applicable to the command.")
             .value_parser(value_parser!(String))
             .required(false)
-            .default_value(&env::var("KNOCK_DOOR_COMMAND").unwrap_or(
-                    "nft add element inet firewall knock '{{ {ip} timeout 5s }}'".to_string()
-                    ))
+            .default_value(
+                &env::var("KNOCK_DOOR_COMMAND")
+                .unwrap_or("sudo nft add element inet firewall knock {{ {ip} timeout 5s }}".to_string())
             )
+        )
         .get_matches();
 
     let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
