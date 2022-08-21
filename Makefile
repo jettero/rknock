@@ -12,6 +12,7 @@ listen: no-listen
 
 stop no-listen:
 	fuser -vkn udp 20022 || :
+	@echo; echo; echo
 
 spam: listen
 	for i in msg{1..3}; do echo $$i | nc -q1 -u localhost 20022; done
