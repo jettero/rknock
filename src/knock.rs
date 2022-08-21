@@ -10,22 +10,26 @@ fn get_args() -> (bool, bool, String, String) {
         .version(crate_version!())
         .author(crate_authors!(", "))
         .about("knock on doors")
-        .arg(arg!(verbose: -v --verbose).action(ArgAction::SetTrue))
-        .arg(arg!(goto: -g --goto-host).action(ArgAction::SetTrue))
+        .arg(arg!(verbose: -v --verbose "say what's happening on stdout").action(ArgAction::SetTrue))
         .arg(
-            arg!(target: -t --target)
+            arg!(go: -g --go "after sending the knock codes, immedaitely execvp(ssh) to the host")
+                .action(ArgAction::SetTrue),
+        )
+        .arg(
+            arg!(target: -t --target "destination host to knock")
                 .value_parser(value_parser!(String))
                 .default_value("localhost:20022"),
         )
         .arg(
-            arg!(secret: -s --secret)
-                .value_parser(value_parser!(String))
-                .default_value("secret"),
+            arg!(secret: -s --secret "The secret code used in the knock. Note that this will be visible to \
+                 anyone that can run 'ps' or even just read /proc")
+            .value_parser(value_parser!(String))
+            .default_value("secret"),
         )
         .get_matches();
 
     let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
-    let goto = *matches.get_one::<bool>("goto").expect("defaulted by clap");
+    let go = *matches.get_one::<bool>("go").expect("defaulted by clap");
 
     let key = matches
         .get_one::<String>("secret")
@@ -37,11 +41,11 @@ fn get_args() -> (bool, bool, String, String) {
         .expect("defaulted by clap")
         .to_string();
 
-    return (verbose, goto, key, target);
+    return (verbose, go, key, target);
 }
 
 fn main() {
-    let (verbose, goto, key_str, target) = get_args();
+    let (verbose, go, key_str, target) = get_args();
     let key = hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes());
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -59,7 +63,7 @@ fn main() {
     socket.connect(&target).expect("connect function failed");
     socket.send(msg.as_bytes()).expect("couldn't send message");
 
-    if goto {
+    if go {
         let err = execvp("ssh", &["ssh", &target]);
         println!("execvp(ssh {}) error: {}", target, err);
     }
