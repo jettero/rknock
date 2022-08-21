@@ -70,7 +70,7 @@ fn main() {
         println!("sending: {}", msg);
     }
 
-    let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).expect("couldn't bind to address");
+    let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).expect("couldn't bind to 0.0.0.0:0 address");
     socket.connect(&target).expect("connect function failed");
     socket.send(msg.as_bytes()).expect("couldn't send message");
 
