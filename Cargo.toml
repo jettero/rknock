@@ -18,6 +18,7 @@ name = "door"
 path = "src/door.rs"
 
 [dependencies]
+#rusty-man = "0.5.0"
 exec = "0.3.1"
 ring = "0.16.20"
 data-encoding = "2.3.2"

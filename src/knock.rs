@@ -44,6 +44,10 @@ fn get_args() -> (bool, bool, String, String) {
     return (verbose, go, key, target);
 }
 
+// fn get_key(key_str: String) -> {
+//     let key = hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes());
+// }
+
 fn main() {
     let (verbose, go, key_str, target) = get_args();
     let key = hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes());
