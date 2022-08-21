@@ -35,7 +35,7 @@ update ubuild:
 	cargo update
 	@+make --no-print-directory build
 	git add Cargo.lock Cargo.toml
-	git commit -m "cargo update" Cargo.lock Cargo.toml || :
+	git commit -m "cargo update" Cargo.lock Cargo.toml
 
 run test build:
 	@ echo $@ > $(LAST_FILE)
