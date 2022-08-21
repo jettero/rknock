@@ -10,6 +10,10 @@ extern crate log;
 use log::{debug, info, LevelFilter};
 use syslog::{BasicLogger, Facility, Formatter3164};
 use env_logger::Env;
+use std::env;
+
+mod lib;
+use lib::get_key;
 
 fn split_payload(buf: &[u8]) -> Result<(&[u8], &[u8]), std::io::ErrorKind> {
     for (i, &v) in buf.iter().enumerate() {
@@ -99,17 +103,21 @@ fn get_args() -> (bool, bool, String, String) {
         .version("0.0.0")
         .author("Paul Miller <paul@jettero.pl>")
         .about("Watches the doors and listens for the secret codes")
-        .arg(arg!(syslog: -S --syslog).action(ArgAction::SetTrue))
-        .arg(arg!(verbose: -v --verbose).action(ArgAction::SetTrue))
+        .arg(arg!(syslog: -S --syslog "log events and info to syslog instead of stdout").action(ArgAction::SetTrue))
+        .arg(arg!(verbose: -v --verbose "print DEBUG level events instead of INFO").action(ArgAction::SetTrue))
         .arg(
-            arg!(listen: -l --listen)
+            arg!(listen: -l --listen <ADDRINFO> "the IP and port on which to listen")
                 .value_parser(value_parser!(String))
-                .default_value("localhost:20022"),
+                .required(false)
+                .default_value("0.0.0.0:20022")
         )
         .arg(
-            arg!(secret: -s --secret)
-                .value_parser(value_parser!(String))
-                .default_value("secret"),
+            arg!(secret: -s --secret <SEMI_SECRET_CODE> "The secret code used in the knock. Note that this will be \
+                 visible to anyone that can run 'ps' or even just read /proc. If the secret code starts with \
+                 an '@' character, it's assumed to be a filename from which the secret should be read.")
+            .value_parser(value_parser!(String))
+            .required(false)
+            .default_value(&env::var("KNOCK_DOOR_SECRET").unwrap_or("secret".to_string()))
         )
         .get_matches();
 
@@ -131,7 +139,7 @@ fn get_args() -> (bool, bool, String, String) {
 
 fn main() -> Result<(), ring::error::Unspecified> {
     let (verbose, syslog, key_str, listen) = get_args();
-    let key = hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes());
+    let key = get_key(key_str);
 
     /*
      * rust really hates globals

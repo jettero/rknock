@@ -2,10 +2,12 @@ use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction};
 use data_encoding::BASE64;
 use exec::execvp;
 use ring::hmac;
-use std::fs;
 use std::net::{Ipv4Addr, UdpSocket};
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::env;
+
+mod lib;
+use lib::get_key;
 
 fn get_args() -> (bool, bool, String, String) {
     let matches = App::new("knock")
@@ -18,7 +20,8 @@ fn get_args() -> (bool, bool, String, String) {
                 .action(ArgAction::SetTrue)
         )
         .arg(
-            arg!(target: -t --target <HOSTNAME> "destination host to knock")
+            arg!(target: -t --target <HOSTNAME> "destination host to knock \
+                 (the port can also be specified after a colon)")
                 .value_parser(value_parser!(String))
                 .required(false)
                 .default_value(&env::var("KNOCK_TARGET").unwrap_or("localhost:20022".to_string()))
@@ -26,7 +29,8 @@ fn get_args() -> (bool, bool, String, String) {
         )
         .arg(
             arg!(secret: -s --secret <SEMI_SECRET_CODE> "The secret code used in the knock. Note that this will be \
-                 visible to anyone that can run 'ps' or even just read /proc")
+                 visible to anyone that can run 'ps' or even just read /proc. If the secret code starts with \
+                 an '@' character, it's assumed to be a filename from which the secret should be read.")
             .value_parser(value_parser!(String))
             .required(false)
             .default_value(&env::var("KNOCK_SECRET").unwrap_or("secret".to_string()))
@@ -47,16 +51,6 @@ fn get_args() -> (bool, bool, String, String) {
         .to_string();
 
     return (verbose, go, key, target);
-}
-
-fn get_key(mut key_str: String) -> hmac::Key {
-    if key_str.starts_with("@") {
-        let fname = &key_str[1..];
-        key_str = fs::read_to_string(fname).expect("couldn't read file");
-        key_str = key_str.trim().to_string();
-    }
-
-    return hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes());
 }
 
 fn main() {
