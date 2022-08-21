@@ -31,10 +31,11 @@ five-knock: listen
 	for i in {1..3}; do sleep 0.5; cargo run; done
 	@+make --no-print-directory no-listen
 
-ubuild:
-	@ echo build > $(LAST_FILE)
+update ubuild:
 	cargo update
-	cargo build
+	@+make --no-print-directory build
+	git add Cargo.lock Cargo.toml
+	git commit -m "cargo update" Cargo.lock Cargo.toml
 
 run test build:
 	@ echo $@ > $(LAST_FILE)
