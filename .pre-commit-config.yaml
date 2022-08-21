@@ -1,5 +1,5 @@
-exclude: 'old/'
 fail_fast: false
+# exclude: 'old/'
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -19,3 +19,7 @@ repos:
     language: system
     types: [rust]
     pass_filenames: true
+- repo: meta
+  hooks:
+  - id: check-hooks-apply
+  - id: check-useless-excludes
