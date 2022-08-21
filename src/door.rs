@@ -21,7 +21,7 @@ fn split_payload(buf: &[u8]) -> Result<(&[u8], &[u8]), std::io::ErrorKind> {
     Err(ErrorKind::NotFound)
 }
 
-fn process_payload(amt: usize, src: String, buf: &[u8], key: &hmac::Key) -> bool {
+fn process_payload(amt: usize, src: &String, buf: &[u8], key: &hmac::Key) -> bool {
     debug!("{} sent {} bytes, \"{}\"", src, amt, String::from_utf8_lossy(&buf));
 
     let (nonce, tag) = match split_payload(&buf) {
@@ -84,10 +84,12 @@ fn listen_to_msgs(listen: String, key: &hmac::Key) {
     info!("listening to {}", listen);
 
     loop {
-        let (amt, src) = socket.recv_from(&mut buf).expect("couldn't read from buffer");
+        let (amt, src_addr) = socket.recv_from(&mut buf).expect("couldn't read from buffer");
+        let src_with_port = src_addr.to_string();
+        let src = src_with_port[..src_with_port.find(":").unwrap()].to_string();
 
-        if process_payload(amt, src.to_string(), &buf[..amt], &key) {
-            info!("TODO: accept actions");
+        if process_payload(amt, &src, &buf[..amt], &key) {
+            info!("nft add element inet firewall knock '{{ {} timeout 5s }}'", &src);
         }
     }
 }
