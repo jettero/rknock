@@ -6,6 +6,10 @@ use std::net::UdpSocket;
 use std::str::from_utf8;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+extern crate strfmt;
+use strfmt::strfmt;
+use std::collections::HashMap;
+
 extern crate log;
 use env_logger::Env;
 use log::{debug, info, LevelFilter};
@@ -79,7 +83,7 @@ fn process_payload(amt: usize, src: &String, buf: &[u8], key: &hmac::Key) -> boo
     return true;
 }
 
-fn listen_to_msgs(listen: String, key: &hmac::Key) {
+fn listen_to_msgs(listen: String, key: &hmac::Key, command: &String) {
     let mut buf = [0; 256];
     let socket = UdpSocket::bind(listen.as_str()).expect("couldn't bind to socket");
 
@@ -93,12 +97,14 @@ fn listen_to_msgs(listen: String, key: &hmac::Key) {
         let src = src_with_port[..src_with_port.find(":").unwrap()].to_string();
 
         if process_payload(amt, &src, &buf[..amt], &key) {
-            info!("nft add element inet firewall knock '{{ {} timeout 5s }}'", &src);
+            let vars = HashMap::from([ ("ip".to_string(), src) ]);
+            let cmd = strfmt(&command, &vars).unwrap();
+            info!("exec({})", &cmd);
         }
     }
 }
 
-fn get_args() -> (bool, bool, String, String) {
+fn get_args() -> (bool, bool, String, String, String) {
     let matches = App::new("door")
         .version("0.0.0")
         .author("Paul Miller <paul@jettero.pl>")
@@ -146,11 +152,16 @@ fn get_args() -> (bool, bool, String, String) {
         .expect("defaulted by clap")
         .to_string();
 
-    return (verbose, syslog, key, listen);
+    let command = matches
+        .get_one::<String>("command")
+        .expect("defaulted by clap")
+        .to_string();
+
+    return (verbose, syslog, key, listen, command);
 }
 
 fn main() -> Result<(), ring::error::Unspecified> {
-    let (verbose, syslog, key_str, listen) = get_args();
+    let (verbose, syslog, key_str, listen, command) = get_args();
     let key = get_key(key_str);
 
     /*
@@ -196,7 +207,7 @@ fn main() -> Result<(), ring::error::Unspecified> {
         env_logger::init_from_env(env);
     }
 
-    listen_to_msgs(listen, &key);
+    listen_to_msgs(listen, &key, &command);
 
     Ok(())
 }
