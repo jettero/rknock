@@ -116,9 +116,9 @@ fn listen_to_msgs(listen: String, key: &hmac::Key, command: &String) {
 
             if !output.status.success() {
                 error!(
-                    "fail({}) status={}\n  stdout: {}\n  stderr: {}",
+                    "fail({}) {}\n  stdout: {}\n  stderr: {}",
                     &cmd,
-                    output.status,
+                    output.status, // e.g., "exit status: 1"
                     String::from_utf8_lossy(&output.stdout),
                     String::from_utf8_lossy(&output.stderr),
                 );
