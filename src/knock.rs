@@ -16,13 +16,13 @@ fn get_args() -> (bool, bool, String, String) {
                 .action(ArgAction::SetTrue),
         )
         .arg(
-            arg!(target: -t --target "destination host to knock")
+            arg!(target: -t --target <HOSTNAME> "destination host to knock")
                 .value_parser(value_parser!(String))
                 .default_value("localhost:20022"),
         )
         .arg(
-            arg!(secret: -s --secret "The secret code used in the knock. Note that this will be visible to \
-                 anyone that can run 'ps' or even just read /proc")
+            arg!(secret: -s --secret <SEMI_SECRET_CODE> "The secret code used in the knock. Note that this will be \
+                 visible to anyone that can run 'ps' or even just read /proc")
             .value_parser(value_parser!(String))
             .default_value("secret"),
         )
