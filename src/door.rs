@@ -9,6 +9,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 extern crate log;
 use log::{debug, info, LevelFilter};
 use syslog::{BasicLogger, Facility, Formatter3164};
+use env_logger::Env;
 
 fn split_payload(buf: &[u8]) -> Result<(&[u8], &[u8]), std::io::ErrorKind> {
     for (i, &v) in buf.iter().enumerate() {
@@ -91,11 +92,12 @@ fn listen_to_msgs(listen: String, key: &hmac::Key) {
     }
 }
 
-fn get_args() -> (bool, String, String) {
+fn get_args() -> (bool, bool, String, String) {
     let matches = App::new("door")
         .version("0.0.0")
         .author("Paul Miller <paul@jettero.pl>")
         .about("Watches the doors and listens for the secret codes")
+        .arg(arg!(syslog: -S --syslog).action(ArgAction::SetTrue))
         .arg(arg!(verbose: -v --verbose).action(ArgAction::SetTrue))
         .arg(
             arg!(listen: -l --listen)
@@ -110,6 +112,7 @@ fn get_args() -> (bool, String, String) {
         .get_matches();
 
     let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
+    let syslog = *matches.get_one::<bool>("syslog").expect("defaulted by clap");
 
     let key = matches
         .get_one::<String>("secret")
@@ -121,20 +124,12 @@ fn get_args() -> (bool, String, String) {
         .expect("defaulted by clap")
         .to_string();
 
-    return (verbose, key, listen);
+    return (verbose, syslog, key, listen);
 }
 
 fn main() -> Result<(), ring::error::Unspecified> {
-    let formatter = Formatter3164 {
-        facility: Facility::LOG_DAEMON,
-        process: "knock-door".into(),
-        hostname: None,
-        pid: 0,
-    };
-
-    let (verbose, key_str, listen) = get_args();
+    let (verbose, syslog, key_str, listen) = get_args();
     let key = hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes());
-    let logger = syslog::unix(formatter).unwrap();
 
     /*
      * rust really hates globals
@@ -153,14 +148,31 @@ fn main() -> Result<(), ring::error::Unspecified> {
      *
      */
 
-    log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
-        .map(|()| {
-            log::set_max_level(match verbose {
-                true => LevelFilter::Debug,
-                false => LevelFilter::Info,
+    if syslog {
+        let formatter = Formatter3164 {
+            facility: Facility::LOG_DAEMON,
+            process: "knock-door".into(),
+            hostname: None,
+            pid: 0,
+        };
+
+        let logger = syslog::unix(formatter).unwrap();
+
+        log::set_boxed_logger(Box::new(BasicLogger::new(logger)))
+            .map(|()| {
+                log::set_max_level(match verbose {
+                    true => LevelFilter::Debug,
+                    false => LevelFilter::Info,
+                })
             })
-        })
-        .expect("logging setup failure");
+            .expect("logging setup failure");
+    } else {
+        let env = Env::default()
+            .filter_or("KNOCK_DOOR_LOG_LEVEL", if verbose { "debug" } else { "info" })
+            .write_style_or("KNOCK_DOOR_LOG_STYLE", "always");
+
+        env_logger::init_from_env(env);
+    }
 
     listen_to_msgs(listen, &key);
 

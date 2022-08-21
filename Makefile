@@ -1,13 +1,13 @@
 
 default: build
 
-run-% verb-%:
-	cargo run --bin $* -- --verbose
-
 %-help:
 	cargo run --bin $* -- --help
 
-listen: no-listen
+knock:
+	cargo run --bin knock -- --verbose
+
+door listen: no-listen
 	cargo run --bin door -- --verbose
 
 listen-bg: no-listen
@@ -22,7 +22,7 @@ spam: listen-bg
 	@+make --no-print-directory no-listen
 
 five-knock: listen-bg
-	for i in {1..3}; do sleep 0.5; cargo run; done
+	for i in {1..3}; do sleep 0.5; cargo run --bin knock; done
 	@+make --no-print-directory no-listen
 
 update ubuild:
