@@ -4,6 +4,7 @@ use exec::execvp;
 use ring::hmac;
 use std::net::{Ipv4Addr, UdpSocket};
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::fs;
 
 fn get_args() -> (bool, bool, String, String) {
     let matches = App::new("knock")
@@ -44,8 +45,14 @@ fn get_args() -> (bool, bool, String, String) {
     return (verbose, go, key, target);
 }
 
-fn get_key(key_str: String) -> hmac::Key {
-    return hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes());
+fn get_key(mut key_str: String) -> hmac::Key {
+    if key_str.starts_with("@") {
+        let fname = &key_str[1..];
+        key_str = fs::read_to_string(fname).expect("couldn't read file");
+        key_str = key_str.trim().to_string();
+    }
+
+    return hmac::Key::new(hmac::HMAC_SHA256, key_str.as_bytes())
 }
 
 fn main() {
