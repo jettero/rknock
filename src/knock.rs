@@ -14,18 +14,21 @@ fn get_args() -> (bool, bool, String, String) {
         .arg(arg!(verbose: -v --verbose "say what's happening on stdout").action(ArgAction::SetTrue))
         .arg(
             arg!(go: -g --go "after sending the knock codes, immedaitely execvp(ssh) to the host")
-                .action(ArgAction::SetTrue),
+                .action(ArgAction::SetTrue)
         )
         .arg(
             arg!(target: -t --target <HOSTNAME> "destination host to knock")
                 .value_parser(value_parser!(String))
-                .default_value("localhost:20022"),
+                .required(false)
+                .default_value(&env::var("KNOCK_TARGET").unwrap_or("localhost:20022".to_string()))
+
         )
         .arg(
             arg!(secret: -s --secret <SEMI_SECRET_CODE> "The secret code used in the knock. Note that this will be \
                  visible to anyone that can run 'ps' or even just read /proc")
             .value_parser(value_parser!(String))
-            .default_value("secret"),
+            .required(false)
+            .default_value(&env::var("KNOCK_SECRET").unwrap_or("secret".to_string()))
         )
         .get_matches();
 
