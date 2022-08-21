@@ -3,16 +3,17 @@ use data_encoding::BASE64;
 use ring::hmac;
 use std::io::ErrorKind;
 use std::net::UdpSocket;
+use std::process::{Command, Stdio};
 use std::str::from_utf8;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 extern crate strfmt;
-use strfmt::strfmt;
 use std::collections::HashMap;
+use strfmt::strfmt;
 
 extern crate log;
 use env_logger::Env;
-use log::{debug, info, LevelFilter};
+use log::{debug, error, info, LevelFilter};
 use std::env;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
@@ -97,9 +98,27 @@ fn listen_to_msgs(listen: String, key: &hmac::Key, command: &String) {
         let src = src_with_port[..src_with_port.find(":").unwrap()].to_string();
 
         if process_payload(amt, &src, &buf[..amt], &key) {
-            let vars = HashMap::from([ ("ip".to_string(), src) ]);
+            let vars = HashMap::from([("ip".to_string(), src)]);
             let cmd = strfmt(&command, &vars).unwrap();
-            info!("exec({})", &cmd);
+
+            info!("exec({})", cmd);
+            let child = Command::new("sh")
+                .arg("-c")
+                .arg(cmd)
+                .current_dir("/")
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .expect("failed to fork child process");
+
+            let output = child.wait_with_output().expect("failed to wait for child");
+
+            if !output.status.success() {
+                error!("  status: {}", output.status);
+                error!("  stdout: {}", String::from_utf8_lossy(&output.stdout));
+                error!("  stderr: {}", String::from_utf8_lossy(&output.stderr));
+            }
         }
     }
 }
