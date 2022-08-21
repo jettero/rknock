@@ -40,6 +40,10 @@ run test build:
 	@ echo $@ > $(LAST_FILE)
 	cargo $@
 
+release release-build:
+	@ echo $@ > $(LAST_FILE)
+	cargo build --release --locked
+
 clean:
 	cargo $@
 	git clean -dfx
