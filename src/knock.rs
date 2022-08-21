@@ -70,7 +70,7 @@ fn main() {
     let msg = format!("{}:{}", nonce, BASE64.encode(tag.as_ref()));
 
     if verbose {
-        println!("sending: {}", msg);
+        println!("send(\"{}\") → {}", msg, target);
     }
 
     let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).expect("couldn't bind to 0.0.0.0:0 address");
