@@ -21,7 +21,8 @@ fn get_args() -> (bool, bool, String, String) {
         )
         .arg(
             arg!(target: -t --target <HOSTNAME> "destination host to knock \
-                 (the port can also be specified after a colon)")
+                 (the port can also be specified after a colon). This value can \
+                 also be set via the KNOCK_TARGET environment variable.")
                 .value_parser(value_parser!(String))
                 .required(false)
                 .default_value(&env::var("KNOCK_TARGET").unwrap_or("localhost:20022".to_string()))
@@ -30,7 +31,8 @@ fn get_args() -> (bool, bool, String, String) {
         .arg(
             arg!(secret: -s --secret <SEMI_SECRET_CODE> "The secret code used in the knock. Note that this will be \
                  visible to anyone that can run 'ps' or even just read /proc. If the secret code starts with \
-                 an '@' character, it's assumed to be a filename from which the secret should be read.")
+                 an '@' character, it's assumed to be a filename from which the secret should be read. The secret \
+                 can also be set in the environment variable KNOCK_SECRET.")
             .value_parser(value_parser!(String))
             .required(false)
             .default_value(&env::var("KNOCK_SECRET").unwrap_or("secret".to_string()))

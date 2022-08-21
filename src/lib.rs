@@ -1,5 +1,5 @@
-use std::fs;
 use ring::hmac;
+use std::fs;
 
 pub fn get_key(mut key_str: String) -> hmac::Key {
     if key_str.starts_with("@") {

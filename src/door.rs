@@ -7,10 +7,10 @@ use std::str::from_utf8;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 extern crate log;
-use log::{debug, info, LevelFilter};
-use syslog::{BasicLogger, Facility, Formatter3164};
 use env_logger::Env;
+use log::{debug, info, LevelFilter};
 use std::env;
+use syslog::{BasicLogger, Facility, Formatter3164};
 
 mod lib;
 use lib::get_key;
@@ -112,13 +112,25 @@ fn get_args() -> (bool, bool, String, String) {
                 .default_value("0.0.0.0:20022")
         )
         .arg(
-            arg!(secret: -s --secret <SEMI_SECRET_CODE> "The secret code used in the knock. Note that this will be \
+            arg!(secret: -s --secret <SECRET> "The secret code used in the knock. Note that this will be \
                  visible to anyone that can run 'ps' or even just read /proc. If the secret code starts with \
-                 an '@' character, it's assumed to be a filename from which the secret should be read.")
+                 an '@' character, it's assumed to be a filename from which the secret should be read. The secret \
+                 can also be set in the environment variable KNOCK_DOOR_SECRET.")
             .value_parser(value_parser!(String))
             .required(false)
             .default_value(&env::var("KNOCK_DOOR_SECRET").unwrap_or("secret".to_string()))
         )
+        .arg(
+            arg!(command: -c --command <SHELL_COMMAND> "The command to execute after a verified message is received. \
+            Can also be set via KNOCK_DOOR_COMMAND. Note that the source IP will be passed via format!() \
+            to this command string, so brace characters must be escaped (doubled) and the command should contain \
+            {{ip}} if applicable to the command.")
+            .value_parser(value_parser!(String))
+            .required(false)
+            .default_value(&env::var("KNOCK_DOOR_COMMAND").unwrap_or(
+                    "nft add element inet firewall knock '{{ {ip} timeout 5s }}'".to_string()
+                    ))
+            )
         .get_matches();
 
     let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
