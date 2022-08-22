@@ -1,0 +1,8 @@
+
+- '@' support for --command (like for --secret)
+  - I'm not happy with the command setup,
+  - I think we need an external script
+
+- in addition to the various ENVIRONMENT_VARIABLES, we should have some config file support
+
+- probably, since there's some overlap, we should have some kid of config.rs or build args in lib.rs or soemthing
