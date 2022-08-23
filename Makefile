@@ -1,4 +1,7 @@
 
+PLATFORMS := x86_64-unknown-linux-gnu x86_64-apple-darwin aarch64-apple-darwin
+RELEASES := $(patsubst %,release-%, $(PLATFORMS))
+
 default: build
 
 %-help:
@@ -34,9 +37,14 @@ update ubuild:
 run test build:
 	cargo $@
 
-release release-build:
-	cargo build --release --locked
-
 clean:
 	cargo $@
 	git clean -dfx
+
+ls list list-release-targets:
+	@ for i in $(RELEASES); do echo $$i; done
+
+release-%:
+	cargo build --release --locked --target $*
+
+release: $(RELEASES)
