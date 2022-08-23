@@ -4,6 +4,11 @@ RELEASES := $(patsubst %,release-%, $(PLATFORMS))
 
 default: build
 
+build: test
+
+doc run test build:
+	cargo $@
+
 %-help:
 	cargo run --bin $* -- --help
 
@@ -33,9 +38,6 @@ update ubuild:
 	@+make --no-print-directory build
 	git add Cargo.lock Cargo.toml
 	git commit -m "cargo update" Cargo.lock Cargo.toml
-
-run test build:
-	cargo $@
 
 clean:
 	cargo $@
