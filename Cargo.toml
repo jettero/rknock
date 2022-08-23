@@ -9,13 +9,19 @@ version = "0.1.0"
 edition = "2021"
 default-run = "knock"
 
+[lib]
+doctest = false
+test = true
+
 [[bin]]
 name = "knock"
 path = "src/knock.rs"
+test = false
 
 [[bin]]
 name = "door"
 path = "src/door.rs"
+test = false
 
 [dependencies]
 exec = "0.3.1"
