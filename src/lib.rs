@@ -47,7 +47,7 @@ impl HMACFrobnicator {
                 let lhs = String::from_utf8_lossy(m);
                 let rhs = String::from_utf8_lossy(s);
                 if self.signature(&lhs) == rhs {
-                    Ok(())
+                    Ok(lhs.to_string())
                 } else {
                     Err("invalid signature".to_owned())
                 }
@@ -80,12 +80,18 @@ mod tests {
     #[test]
     fn verify_something() -> Result<(), String> {
         let mut hmt = HMACFrobnicator::new("secret key");
-        hmt.verify(KNOWN)
+
+        match hmt.verify(KNOWN) {
+            Ok(_) => Ok(()),
+            Err(_) => Err("should have passed".to_owned()),
+        }
     }
 
     #[test]
     fn fail_verify_something() -> Result<(), String> {
         let mut hmt = HMACFrobnicator::new("secret key");
+
+        // here we have to reverse the result
         match hmt.verify(K_BAD) {
             Err(_) => Ok(()),
             Ok(_) => Err("should have failed".to_owned()),
