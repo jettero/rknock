@@ -1,12 +1,11 @@
 use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction};
-use data_encoding::BASE64;
 use exec::execvp;
 use std::net::{Ipv4Addr, UdpSocket};
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::env;
 
 mod lib;
-use lib::get_key;
+use lib::HMACFrobnicator;
 
 fn get_args() -> (bool, bool, String, String) {
     let matches = App::new("knock")
@@ -56,14 +55,13 @@ fn get_args() -> (bool, bool, String, String) {
 
 fn main() {
     let (verbose, go, key_str, mut target) = get_args();
-    let key = get_key(key_str);
+    let mut hf = HMACFrobnicator::new(&key_str);
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("systemtime fucked")
         .as_secs();
     let nonce = format!("{}", now);
-    let tag = hmac::sign(&key, nonce.as_bytes());
-    let msg = format!("{}:{}", nonce, BASE64.encode(tag.as_ref()));
+    let msg = hf.sign(&nonce);
 
     if !target.contains(":") {
         target = target + ":20022"
