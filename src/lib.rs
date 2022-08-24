@@ -30,7 +30,7 @@ impl HMACFrobnicator {
         return format!("{}:{}", msg, self.signature(msg));
     }
 
-    pub fn verify(&mut self, msg: &str) -> Result<(), String> {
+    pub fn verify(&mut self, msg: &str) -> Result<String, String> {
         let buf = msg.as_bytes();
         let mut mpart: Option<&[u8]> = None;
         let mut spart: Option<&[u8]> = None;
