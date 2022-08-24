@@ -25,7 +25,6 @@ test = false
 
 [dependencies]
 exec = "0.3.1"
-ring = "0.16.20"
 data-encoding = "2.3.2"
 clap = { version = "3.2.8", features = [ "cargo" ] }
 syslog = "^6.0"

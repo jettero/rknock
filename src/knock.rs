@@ -1,7 +1,6 @@
 use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction};
 use data_encoding::BASE64;
 use exec::execvp;
-use ring::hmac;
 use std::net::{Ipv4Addr, UdpSocket};
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::env;

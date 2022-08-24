@@ -1,6 +1,5 @@
 use clap::{arg, value_parser, App, ArgAction};
 use data_encoding::BASE64;
-use ring::hmac;
 use std::io::ErrorKind;
 use std::net::UdpSocket;
 use std::process::{Command, Stdio};
