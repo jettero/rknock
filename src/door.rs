@@ -1,9 +1,6 @@
 use clap::{arg, value_parser, App, ArgAction};
-use data_encoding::BASE64;
-use std::io::ErrorKind;
 use std::net::UdpSocket;
 use std::process::{Command, Stdio};
-use std::str::from_utf8;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 extern crate strfmt;
@@ -17,47 +14,14 @@ use std::env;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
 mod lib;
-use lib::get_key;
+use lib::HMACFrobnicator;
 
-fn split_payload(buf: &[u8]) -> Result<(&[u8], &[u8]), std::io::ErrorKind> {
-    for (i, &v) in buf.iter().enumerate() {
-        if v == b':' {
-            return Ok((&buf[..i], &buf[i + 1..]));
-        }
-    }
+fn process_payload(amt: usize, src: &String, buf: &[u8], hf: &mut HMACFrobnicator) -> bool {
+    let msg = String::from_utf8_lossy(&buf);
+    debug!("{} sent {} bytes, \"{}\"", src, amt, msg);
 
-    Err(ErrorKind::NotFound)
-}
-
-fn process_payload(amt: usize, src: &String, buf: &[u8], key: &hmac::Key) -> bool {
-    debug!("{} sent {} bytes, \"{}\"", src, amt, String::from_utf8_lossy(&buf));
-
-    let (nonce, tag) = match split_payload(&buf) {
-        Ok(v) => v,
-        Err(e) => {
-            debug!("invalid payload: {}", e);
-            return false;
-        }
-    };
-
-    let snonce = match from_utf8(nonce) {
-        Ok(s) => s,
-        Err(e) => {
-            debug!("invalid nonce(!utf8): {}", e);
-            return false;
-        }
-    };
-
-    let dtag = match BASE64.decode(tag) {
-        Ok(b) => b,
-        Err(e) => {
-            debug!("invalid tag: {}", e);
-            return false;
-        }
-    };
-
-    match hmac::verify(&key, &nonce, &dtag) {
-        Ok(_) => match snonce.parse::<u64>() {
+    match hf.verify(&msg) {
+        Ok(snonce) => match snonce.parse::<u64>() {
             Ok(inonce) => {
                 let now = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
@@ -83,7 +47,7 @@ fn process_payload(amt: usize, src: &String, buf: &[u8], key: &hmac::Key) -> boo
     return true;
 }
 
-fn listen_to_msgs(listen: String, key: &hmac::Key, command: &String) {
+fn listen_to_msgs(listen: String, hf: &mut HMACFrobnicator, command: &String) {
     let mut buf = [0; 256];
     let socket = UdpSocket::bind(listen.as_str()).expect("couldn't bind to socket");
 
@@ -96,7 +60,7 @@ fn listen_to_msgs(listen: String, key: &hmac::Key, command: &String) {
         let src_with_port = src_addr.to_string();
         let src = src_with_port[..src_with_port.find(":").unwrap()].to_string();
 
-        if process_payload(amt, &src, &buf[..amt], &key) {
+        if process_payload(amt, &src, &buf[..amt], hf) {
             let vars = HashMap::from([("ip".to_string(), src)]);
             let cmd = strfmt(&command, &vars).unwrap();
 
@@ -183,9 +147,9 @@ fn get_args() -> (bool, bool, String, String, String) {
     return (verbose, syslog, key, listen, command);
 }
 
-fn main() -> Result<(), ring::error::Unspecified> {
+fn main() {
     let (verbose, syslog, key_str, listen, command) = get_args();
-    let key = get_key(key_str);
+    let mut hf = HMACFrobnicator::new(&key_str);
 
     /*
      * rust really hates globals
@@ -230,7 +194,5 @@ fn main() -> Result<(), ring::error::Unspecified> {
         env_logger::init_from_env(env);
     }
 
-    listen_to_msgs(listen, &key, &command);
-
-    Ok(())
+    listen_to_msgs(listen, &mut hf, &command);
 }
