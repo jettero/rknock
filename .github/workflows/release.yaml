@@ -1,0 +1,29 @@
+
+---
+name: binaries
+
+on:
+  workflow_call:
+    inputs: {}
+  workflow_dispatch:
+    inputs: {}
+
+jobs:
+  build_and_test:
+    name: rust-door-knocker
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - run: cargo build --release --all-features
+      - uses: actions/upload-artifact@v3
+        with:
+          name: door.x86_64-linux-gnu
+          path: target/release/door
+      - uses: actions/upload-artifact@v3
+        with:
+          name: knock.x86_64-linux-gnu
+          path: target/release/knock
