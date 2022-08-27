@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-    name: rust-door-knocker
+    name: test rust-door-knocker
     runs-on: ubuntu-latest
 
     steps:
