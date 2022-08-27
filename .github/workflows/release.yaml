@@ -11,6 +11,7 @@ on:
 jobs:
   build_and_test:
     name: rust-door-knocker
+    runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
