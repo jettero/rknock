@@ -1,6 +1,6 @@
 
 ---
-name: binaries
+name: build
 
 on:
   workflow_call:
