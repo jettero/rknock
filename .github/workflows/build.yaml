@@ -9,6 +9,8 @@ on:
     inputs: {}
 
 jobs:
+  test:
+    uses: ./.github/workflows/test.yaml
   build:
     name: rust-door-knocker
     runs-on: ubuntu-latest
