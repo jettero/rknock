@@ -9,11 +9,13 @@ on:
     inputs: {}
 
 jobs:
-  build_and_test:
+  build:
     name: rust-door-knocker
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ github.token }}
+
+    needs: test
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
