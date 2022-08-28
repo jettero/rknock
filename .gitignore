@@ -4,5 +4,9 @@
 
 # have to generate this since cargo doesn't do any scm thinking at all even via
 # plugins
-
 /Cargo.toml
+
+# Tracking this is ass. I'm using git versioning, so literally every time we
+# rebuild it's updating this file. I know you're supposed to, but I"m doing my
+# builds on github actions.
+/Cargo.lock
