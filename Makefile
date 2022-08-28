@@ -1,7 +1,7 @@
 
 PLATFORMS := x86_64-unknown-linux-gnu x86_64-apple-darwin aarch64-apple-darwin
 RELEASES  := $(patsubst %,release-%, $(PLATFORMS))
-VERSION   := $(shell git describe --dirty --tags --long --match v[0-9][.]*)
+VERSION   := $(shell git describe --dirty --tags --match v[0-9][.]*)
 GIT_DIR   := $(shell git rev-parse --git-dir)
 HEADS     := $(GIT_DIR)/HEAD $(GIT_DIR)/$(shell git show-ref --heads | cut -d' ' -f2)
 
