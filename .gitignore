@@ -1,2 +1,7 @@
 /target
 /.last
+
+# have to generate this since cargo doesn't do any scm thinking at all even via
+# plugins
+
+/Cargo.toml

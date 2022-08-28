@@ -4,6 +4,8 @@ RELEASES := $(patsubst %,release-%, $(PLATFORMS))
 
 default: build
 
+Cargo.toml: input.toml
+
 build: test
 
 doc run test build:

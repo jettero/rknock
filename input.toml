@@ -5,7 +5,7 @@
 
 [package]
 name = "rust-door-knocker"
-version = "0.1.0"
+version = "UNKNOWN"
 edition = "2021"
 default-run = "knock"
 
