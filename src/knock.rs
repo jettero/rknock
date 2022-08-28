@@ -1,8 +1,8 @@
 use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction};
 use exec::execvp;
+use std::env;
 use std::net::{Ipv4Addr, UdpSocket};
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::env;
 
 mod lib;
 use lib::HMACFrobnicator;
@@ -23,7 +23,7 @@ fn get_args() -> (bool, bool, String, String) {
                  also be set via the KNOCK_TARGET environment variable.")
                 .value_parser(value_parser!(String))
                 .required(false)
-                .default_value(&env::var("KNOCK_TARGET").unwrap_or("localhost:20022".to_string()))
+                .default_value(&env::var("KNOCK_TARGET").unwrap_or_else(|_| "localhost:20022".to_string()))
 
         )
         .arg(
@@ -33,7 +33,7 @@ fn get_args() -> (bool, bool, String, String) {
                  can also be set in the environment variable KNOCK_SECRET.")
             .value_parser(value_parser!(String))
             .required(false)
-            .default_value(&env::var("KNOCK_SECRET").unwrap_or("secret".to_string()))
+            .default_value(&env::var("KNOCK_SECRET").unwrap_or_else(|_| "secret".to_string()))
         )
         .get_matches();
 
@@ -63,8 +63,8 @@ fn main() {
     let nonce = format!("{}", now);
     let msg = hf.sign(&nonce);
 
-    if !target.contains(":") {
-        target = target + ":20022"
+    if !target.contains(':') {
+        target += ":20022"
     }
 
     if verbose {
@@ -77,7 +77,7 @@ fn main() {
     socket.send(msg.as_bytes()).expect("couldn't send message");
 
     if go {
-       let err = execvp("ssh", &["ssh", &target]);
-       panic!("execvp(ssh {}) error: {}", target, err);
+        let err = execvp("ssh", &["ssh", &target]);
+        panic!("execvp(ssh {}) error: {}", target, err);
     }
 }

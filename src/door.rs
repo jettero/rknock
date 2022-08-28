@@ -47,7 +47,7 @@ fn process_payload(amt: usize, src: &String, buf: &[u8], hf: &mut HMACFrobnicato
     true
 }
 
-fn listen_to_msgs(listen: String, hf: &mut HMACFrobnicator, command: &String) {
+fn listen_to_msgs(listen: String, hf: &mut HMACFrobnicator, command: &str) {
     let mut buf = [0; 256];
     let socket = UdpSocket::bind(listen.as_str()).expect("couldn't bind to socket");
 

@@ -57,7 +57,6 @@ impl HMACFrobnicator {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
