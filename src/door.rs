@@ -17,7 +17,7 @@ mod lib;
 use lib::HMACFrobnicator;
 
 fn process_payload(amt: usize, src: &String, buf: &[u8], hf: &mut HMACFrobnicator) -> bool {
-    let msg = String::from_utf8_lossy(&buf);
+    let msg = String::from_utf8_lossy(buf);
     debug!("{} sent {} bytes, \"{}\"", src, amt, msg);
 
     match hf.verify(&msg) {
@@ -58,11 +58,11 @@ fn listen_to_msgs(listen: String, hf: &mut HMACFrobnicator, command: &String) {
     loop {
         let (amt, src_addr) = socket.recv_from(&mut buf).expect("couldn't read from buffer");
         let src_with_port = src_addr.to_string();
-        let src = src_with_port[..src_with_port.find(":").unwrap()].to_string();
+        let src = src_with_port[..src_with_port.find(':').unwrap()].to_string();
 
         if process_payload(amt, &src, &buf[..amt], hf) {
             let vars = HashMap::from([("ip".to_string(), src)]);
-            let cmd = strfmt(&command, &vars).unwrap();
+            let cmd = strfmt(command, &vars).unwrap();
 
             debug!("exec({})", cmd);
             let child = Command::new("sh")

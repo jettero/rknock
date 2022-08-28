@@ -50,7 +50,7 @@ fn get_args() -> (bool, bool, String, String) {
         .expect("defaulted by clap")
         .to_string();
 
-    return (verbose, go, key, target);
+    (verbose, go, key, target)
 }
 
 fn main() {
