@@ -10,7 +10,7 @@ pub struct HMACFrobnicator {
 impl HMACFrobnicator {
     pub fn new(key: &str) -> Self {
         let mut key_str: String = key.to_string();
-        if key_str.starts_with("@") {
+        if key_str.starts_with('@') {
             let fname = &key_str[1..];
             key_str = fs::read_to_string(fname).expect("couldn't read file");
             key_str = key_str.trim().to_string();
