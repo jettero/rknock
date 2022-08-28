@@ -1,6 +1,6 @@
 
 RELEASES  := $(patsubst %,release-%, $(PLATFORMS))
-VERSION   := $(shell git describe --dirty --tags --match 'v[0-9][.]*' | sed -e s/^v// -e s/-g/-/)
+VERSION   := $(shell git describe --tags --match 'v[0-9][.]*' | sed -e s/^v// -e s/-g/-/)
 GIT_DIR   := $(shell git rev-parse --git-dir)
 HEADS     := $(GIT_DIR)/HEAD $(shell git show-ref --heads --tags | sed -e 's,.* ,$(GIT_DIR)/,')
 
@@ -9,11 +9,12 @@ default: build
 version: Cargo.toml
 
 Cargo.toml: input.toml Makefile $(HEADS)
-	@echo '## THIS FILE IS GENERATED ##' > $@
-	@echo '## THIS FILE IS GENERATED ##' >> $@
-	@echo '## THIS FILE IS GENERATED ##' >> $@
-	@echo '## THIS FILE IS GENERATED ##' >> $@
-	sed -e 's/UNKNOWN/$(VERSION)/' $< >> $@ && grep -H ^version $@
+	@ echo making $@ using $< as input
+	@ ( echo '# THIS FILE IS GENERATED #'; \
+		sed -e 's/^#.*//' -e 's/UNKNOWN/$(VERSION)/' $<; \
+		echo '# THIS FILE IS GENERATED #') \
+			| grep . > $@ \
+				&& grep -H ^version $@
 
 build: test
 
