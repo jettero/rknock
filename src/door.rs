@@ -110,7 +110,7 @@ fn get_args() -> (bool, bool, String, String, String) {
                  can also be set in the environment variable KNOCK_DOOR_SECRET.")
             .value_parser(value_parser!(String))
             .required(false)
-            .default_value(&env::var("KNOCK_DOOR_SECRET").unwrap_or("secret".to_string()))
+            .default_value(&env::var("KNOCK_DOOR_SECRET").unwrap_or_else(|_| "secret".to_string()))
         )
         .arg(
             arg!(command: -c --command <SHELL_COMMAND> "The command to execute after a verified message is received. \
@@ -121,7 +121,7 @@ fn get_args() -> (bool, bool, String, String, String) {
             .required(false)
             .default_value(
                 &env::var("KNOCK_DOOR_COMMAND")
-                .unwrap_or("sudo nft add element inet firewall knock {{ {ip} timeout 5s }}".to_string())
+                .unwrap_or_else(|_| "sudo nft add element inet firewall knock {{ {ip} timeout 5s }}".to_string())
             )
         )
         .get_matches();
