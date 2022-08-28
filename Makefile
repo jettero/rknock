@@ -4,7 +4,7 @@ VERSION   := $(shell git describe --dirty --tags --match 'v[0-9][.]*' | sed -e s
 GIT_DIR   := $(shell git rev-parse --git-dir)
 HEADS     := $(GIT_DIR)/HEAD $(shell git show-ref --heads --tags | sed -e 's,.* ,$(GIT_DIR)/,')
 
-default: build
+default: test
 
 version: Cargo.toml
 
@@ -15,8 +15,6 @@ Cargo.toml: input.toml Makefile $(HEADS)
 		echo '# THIS FILE IS GENERATED #') \
 			| grep . > $@ \
 				&& grep -H ^version $@
-
-build: test
 
 doc run test build: Cargo.toml
 	cargo $@
@@ -63,7 +61,5 @@ clean:
 	cargo $@
 	git clean -dfx
 
-release:
+release: test
 	cargo build --release --locked
-
-release: $(RELEASES)

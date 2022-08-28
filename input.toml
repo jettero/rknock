@@ -13,19 +13,16 @@ default-run = "knock"
 [lib]
 name = 'rlib'
 path = 'src/lib.rs'
-doctest = false
-test = true
 crate-type = ["lib"]
+doctest = false
 
 [[bin]]
 name = "knock"
 path = "src/knock.rs"
-test = false
 
 [[bin]]
 name = "door"
 path = "src/door.rs"
-test = false
 
 [dependencies]
 exec = "0.3.1"
