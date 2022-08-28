@@ -44,7 +44,7 @@ fn process_payload(amt: usize, src: &String, buf: &[u8], hf: &mut HMACFrobnicato
     };
 
     info!("{} VERIFIED", src);
-    return true;
+    true
 }
 
 fn listen_to_msgs(listen: String, hf: &mut HMACFrobnicator, command: &String) {
