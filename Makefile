@@ -43,12 +43,15 @@ five-knock: listen-bg
 	for i in {1..3}; do sleep 0.5; cargo run --bin knock; done
 	@+make --no-print-directory no-listen
 
-update ubuild:
+update:
 	cp input.toml Cargo.toml
 	cargo update
 	cp Cargo.toml input.toml
 	git add Cargo.lock input.toml
 	git commit -m "cargo update" Cargo.lock input.toml
+
+ubuild:
+	@+make --no-print-directory update
 	@+make --no-print-directory build
 
 clean:
