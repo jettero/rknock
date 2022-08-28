@@ -21,6 +21,12 @@ build: test
 doc run test build: Cargo.toml
 	cargo $@
 
+lint:
+	cargo clippy
+
+auto-lint:
+	cargo clippy --allow-dirty --fix
+
 %-help:
 	cargo run --bin $* -- --help
 
@@ -56,9 +62,6 @@ ubuild:
 clean:
 	cargo $@
 	git clean -dfx
-
-ls list list-release-targets:
-	@ for i in $(RELEASES); do echo $$i; done
 
 release:
 	cargo build --release --locked
