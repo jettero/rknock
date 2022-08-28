@@ -10,3 +10,11 @@
 # rebuild it's updating this file. I know you're supposed to, but I"m doing my
 # builds on github actions.
 /Cargo.lock
+
+
+# Added by cargo
+#
+# already existing elements were commented out
+
+#/target
+#/Cargo.lock

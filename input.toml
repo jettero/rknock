@@ -11,8 +11,11 @@ edition = "2021"
 default-run = "knock"
 
 [lib]
+name = 'rlib'
+path = 'src/lib.rs'
 doctest = false
 test = true
+crate-type = ["lib"]
 
 [[bin]]
 name = "knock"

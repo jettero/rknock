@@ -4,8 +4,7 @@ use std::env;
 use std::net::{Ipv4Addr, UdpSocket};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-mod lib;
-use lib::HMACFrobnicator;
+use rlib::HMACFrobnicator;
 
 fn get_args() -> (bool, bool, String, String) {
     let matches = App::new("knock")

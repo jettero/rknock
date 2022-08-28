@@ -13,8 +13,7 @@ use log::{debug, error, info, LevelFilter};
 use std::env;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
-mod lib;
-use lib::HMACFrobnicator;
+use rlib::HMACFrobnicator;
 
 fn process_payload(amt: usize, src: &String, buf: &[u8], hf: &mut HMACFrobnicator) -> bool {
     let msg = String::from_utf8_lossy(buf);
