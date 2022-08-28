@@ -1,10 +1,12 @@
 
 PLATFORMS := x86_64-unknown-linux-gnu x86_64-apple-darwin aarch64-apple-darwin
 RELEASES := $(patsubst %,release-%, $(PLATFORMS))
+VERSION  := $(shell git describe git describe --dirty --tags --long --match '^v\d+\.\d+\.\d+')
 
 default: build
 
 Cargo.toml: input.toml
+	sed -i 's/UNKONWN/$(VERSION)/' $< > $@
 
 build: test
 
