@@ -3,14 +3,16 @@ PLATFORMS := x86_64-unknown-linux-gnu x86_64-apple-darwin aarch64-apple-darwin
 RELEASES := $(patsubst %,release-%, $(PLATFORMS))
 VERSION  := $(shell git describe --dirty --tags --long --match v[0-9][.]*)
 
+.PHONY: Cargo.toml # make sure this always runs regardless of file states
+
 default: build
 
-Cargo.toml: input.toml Makefile
+Cargo.toml: input.toml
 	@echo '## THIS FILE IS GENERATED ##' > $@
 	@echo '## THIS FILE IS GENERATED ##' >> $@
 	@echo '## THIS FILE IS GENERATED ##' >> $@
 	@echo '## THIS FILE IS GENERATED ##' >> $@
-	sed -i 's/UNKONWN/$(VERSION)/' $< >> $@
+	sed -e 's/UNKONWN/$(VERSION)/' $< >> $@
 
 build: test
 
@@ -44,8 +46,8 @@ five-knock: listen-bg
 update ubuild:
 	cargo update
 	@+make --no-print-directory build
-	git add Cargo.lock Cargo.toml
-	git commit -m "cargo update" Cargo.lock Cargo.toml
+	git add Cargo.lock input.toml
+	git commit -m "cargo update" Cargo.lock input.toml
 
 clean:
 	cargo $@
