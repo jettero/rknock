@@ -1,7 +1,7 @@
 
 PLATFORMS := x86_64-unknown-linux-gnu x86_64-apple-darwin aarch64-apple-darwin
 RELEASES  := $(patsubst %,release-%, $(PLATFORMS))
-VERSION   := $(shell git describe --dirty --tags --match v[0-9][.]* | sed -e s/^v// | sed -e s/-g/-/)
+VERSION   := $(shell git describe --dirty --tags --match 'v[0-9][.]*' | sed -e s/^v// -e s/-g/-/)
 GIT_DIR   := $(shell git rev-parse --git-dir)
 HEADS     := $(GIT_DIR)/HEAD $(shell git show-ref --heads --tags | sed -e 's,.* ,$(GIT_DIR)/,')
 
@@ -45,12 +45,9 @@ five-knock: listen-bg
 	for i in {1..3}; do sleep 0.5; cargo run --bin knock; done
 	@+make --no-print-directory no-listen
 
-update:
-	cp input.toml Cargo.toml
+update: Cargo.toml
 	cargo update
-	cp Cargo.toml input.toml
-	git add Cargo.lock input.toml
-	git commit -m "cargo update" Cargo.lock input.toml
+	sed -e s/$(VERSION)/UNKNOWN/ $< | grep -v GENERATED > input.toml
 
 ubuild:
 	@+make --no-print-directory update
