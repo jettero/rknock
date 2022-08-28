@@ -1,5 +1,4 @@
 
-PLATFORMS := x86_64-unknown-linux-gnu x86_64-apple-darwin aarch64-apple-darwin
 RELEASES  := $(patsubst %,release-%, $(PLATFORMS))
 VERSION   := $(shell git describe --dirty --tags --match 'v[0-9][.]*' | sed -e s/^v// -e s/-g/-/)
 GIT_DIR   := $(shell git rev-parse --git-dir)
@@ -60,7 +59,7 @@ clean:
 ls list list-release-targets:
 	@ for i in $(RELEASES); do echo $$i; done
 
-release-%:
-	cargo build --release --locked --target $*
+release:
+	cargo build --release --locked
 
 release: $(RELEASES)
