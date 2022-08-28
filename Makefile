@@ -1,11 +1,11 @@
 
 PLATFORMS := x86_64-unknown-linux-gnu x86_64-apple-darwin aarch64-apple-darwin
 RELEASES := $(patsubst %,release-%, $(PLATFORMS))
-VERSION  := $(shell git describe git describe --dirty --tags --long --match '^v\d+\.\d+\.\d+')
+VERSION  := $(shell git describe --dirty --tags --long --match v[0-9][.]*)
 
 default: build
 
-Cargo.toml: input.toml
+Cargo.toml: input.toml Makefile
 	sed -i 's/UNKONWN/$(VERSION)/' $< > $@
 
 build: test
