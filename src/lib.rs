@@ -23,11 +23,11 @@ impl HMACFrobnicator {
         let mut hasher = Sha256::new();
         hasher.update(internal.as_bytes());
         let res = hasher.finalize(); // GenericArray<u8, usize>
-        return BASE64.encode(&res[..]);
+        BASE64.encode(&res[..])
     }
 
     pub fn sign(&mut self, msg: &str) -> String {
-        return format!("{}:{}", msg, self.signature(msg));
+        format!("{}:{}", msg, self.signature(msg))
     }
 
     pub fn verify(&mut self, msg: &str) -> Result<String, String> {
