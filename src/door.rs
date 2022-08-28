@@ -144,7 +144,7 @@ fn get_args() -> (bool, bool, String, String, String) {
         .expect("defaulted by clap")
         .to_string();
 
-    return (verbose, syslog, key, listen, command);
+    (verbose, syslog, key, listen, command)
 }
 
 fn main() {
