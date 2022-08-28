@@ -7,12 +7,14 @@ HEADS     := $(GIT_DIR)/HEAD $(shell git show-ref --heads --tags | sed -e 's,.* 
 
 default: build
 
+version: Cargo.toml
+
 Cargo.toml: input.toml Makefile $(HEADS)
 	@echo '## THIS FILE IS GENERATED ##' > $@
 	@echo '## THIS FILE IS GENERATED ##' >> $@
 	@echo '## THIS FILE IS GENERATED ##' >> $@
 	@echo '## THIS FILE IS GENERATED ##' >> $@
-	sed -e 's/UNKONWN/$(VERSION)/' $< >> $@
+	sed -e 's/UNKNOWN/$(VERSION)/' $< >> $@ && grep -H ^version $@
 
 build: test
 
