@@ -6,10 +6,10 @@ VERSION  := $(shell git describe --dirty --tags --long --match v[0-9][.]*)
 default: build
 
 Cargo.toml: input.toml Makefile
-	@echo ## THIS FILE IS GENERATED ## > $@
-	@echo ## THIS FILE IS GENERATED ## >> $@
-	@echo ## THIS FILE IS GENERATED ## >> $@
-	@echo ## THIS FILE IS GENERATED ## >> $@
+	@echo '## THIS FILE IS GENERATED ##' > $@
+	@echo '## THIS FILE IS GENERATED ##' >> $@
+	@echo '## THIS FILE IS GENERATED ##' >> $@
+	@echo '## THIS FILE IS GENERATED ##' >> $@
 	sed -i 's/UNKONWN/$(VERSION)/' $< >> $@
 
 build: test
