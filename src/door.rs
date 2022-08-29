@@ -17,7 +17,7 @@ use rlib::HMACFrobnicator;
 
 fn process_payload(amt: usize, src: &String, buf: &[u8], hf: &mut HMACFrobnicator) -> bool {
     let msg = String::from_utf8_lossy(buf);
-    debug!("{} sent {} bytes, \"{}\"", src, amt, msg);
+    debug!("{} sent {} bytes, {:?}", src, amt, msg); // {:?} has its own quotes
 
     match hf.verify(&msg) {
         Ok(snonce) => match snonce.parse::<u64>() {
