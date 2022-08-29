@@ -26,6 +26,8 @@ jobs:
         with:
           toolchain: stable
 
+      - run: make Cargo.toml
+
       - uses: actions-rs/cargo@v1
         with:
           use-cross: yes
