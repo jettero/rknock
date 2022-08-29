@@ -33,3 +33,4 @@ log = { version = "0.4.17", features = [ "std" ] }
 env_logger = "0.8.4"
 strfmt = "0.2.2"
 sha2 = "0.10"
+tokio = { version="1.20.1", features=["rt","net"] }
