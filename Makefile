@@ -61,5 +61,5 @@ clean:
 	cargo $@
 	git clean -dfx
 
-release: test
+release:
 	cargo build --release --locked
