@@ -19,7 +19,7 @@ Cargo.toml: input.toml Makefile $(HEADS)
 doc run test build: Cargo.toml
 	cargo $@
 
-lint:
+clippy lint:
 	cargo clippy
 
 auto-lint:
