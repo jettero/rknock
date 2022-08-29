@@ -4,6 +4,9 @@ use std::env;
 use std::net::{Ipv4Addr, UdpSocket};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+
 use rlib::HMACFrobnicator;
 
 fn get_args() -> (bool, bool, String, String) {
@@ -59,7 +62,12 @@ fn main() {
         .duration_since(UNIX_EPOCH)
         .expect("systemtime fucked")
         .as_secs();
-    let nonce = format!("{}", now);
+    let salt: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(13)
+        .map(char::from)
+        .collect();
+    let nonce = format!("{}${}", now, salt);
     let msg = hf.sign(&nonce);
 
     if !target.contains(':') {
