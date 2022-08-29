@@ -9,7 +9,7 @@ use rand::{thread_rng, Rng};
 
 use rlib::HMACFrobnicator;
 
-fn get_args() -> (bool, bool, String, String) {
+fn get_args() -> (bool, bool, String, String, bool) {
     let matches = App::new("knock")
         .version(crate_version!())
         .author(crate_authors!(", "))
@@ -37,10 +37,16 @@ fn get_args() -> (bool, bool, String, String) {
             .required(false)
             .default_value(&env::var("KNOCK_SECRET").unwrap_or_else(|_| "secret".to_string()))
         )
+        .arg(
+            arg!(target: --no-salt "disable salt (for testing?)")
+                .action(ArgAction::SetTrue)
+                .required(false)
+        )
         .get_matches();
 
     let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
     let go = *matches.get_one::<bool>("go").expect("defaulted by clap");
+    let disable_salt = *matches.get_one::<bool>("no-salt").expect("defaulted by clap");
 
     let key = matches
         .get_one::<String>("secret")
@@ -52,22 +58,28 @@ fn get_args() -> (bool, bool, String, String) {
         .expect("defaulted by clap")
         .to_string();
 
-    (verbose, go, key, target)
+    (verbose, go, key, target, disable_salt)
 }
 
 fn main() {
-    let (verbose, go, key_str, mut target) = get_args();
+    let (verbose, go, key_str, mut target, disable_salt) = get_args();
     let mut hf = HMACFrobnicator::new(&key_str);
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("systemtime fucked")
         .as_secs();
-    let salt: String = thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(13)
-        .map(char::from)
-        .collect();
-    let nonce = format!("{}${}", now, salt);
+
+    let nonce = if disable_salt {
+        let salt: String = thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(13)
+            .map(char::from)
+            .collect();
+        format!("{}${}", now, salt)
+    } else {
+        format!("{}", now)
+    };
+
     let msg = hf.sign(&nonce);
 
     if !target.contains(':') {
