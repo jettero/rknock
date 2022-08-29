@@ -1,8 +1,3 @@
-use clap::{arg, value_parser, App, ArgAction};
-use std::net::UdpSocket;
-use std::process::{Command, Stdio};
-use std::time::{SystemTime, UNIX_EPOCH};
-
 extern crate strfmt;
 use std::collections::HashMap;
 use strfmt::strfmt;
@@ -13,91 +8,132 @@ use log::{debug, error, info, LevelFilter};
 use std::env;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
+extern crate lru;
+use lru::LruCache;
+
+use clap::{arg, value_parser, App, ArgAction};
+use std::process::{Command, Stdio};
+use std::time::{SystemTime, UNIX_EPOCH};
+use tokio::net::UdpSocket;
+
 use rlib::HMACFrobnicator;
 
-fn process_payload(amt: usize, src: &String, buf: &[u8], hf: &mut HMACFrobnicator) -> bool {
-    let msg = String::from_utf8_lossy(buf);
-    debug!("{} sent {} bytes, {:?}", src, amt, msg); // {:?} has its own quotes
+async fn allow_ip(src: &String, command: &str) {
+    let vars = HashMap::from([("ip".to_string(), src.to_string())]);
+    let cmd = strfmt(command, &vars).unwrap();
+
+    debug!("exec({}) ip={}", cmd, src);
 
     let debug_sleep = std::time::Duration::from_millis(
         std::env::var("KNOCK_DOOR_DEBUG_DELAY")
             .unwrap_or_else(|_| "0".to_string())
             .parse::<u64>()
-            .unwrap_or_else(|_| 0),
+            .unwrap_or(0),
     );
 
+    debug!("sleep({})", debug_sleep.as_millis());
     if debug_sleep.as_millis() > 0 {
         // I can't think of anything that would make this useful outside debugs
         // but decided to leave KNOCK_DOOR_DEBUG_DELAY exposed regardless.
         std::thread::sleep(debug_sleep);
     }
 
+    let child = Command::new("sh")
+        .arg("-c")
+        .arg(&cmd)
+        .current_dir("/")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("failed to fork child process");
+
+    let output = child.wait_with_output().expect("failed to wait for child");
+
+    if !output.status.success() {
+        error!(
+            "fail({}) {}\n  stdout: {}\n  stderr: {}",
+            &cmd,
+            output.status, // e.g., "exit status: 1"
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr),
+        );
+    }
+}
+
+async fn process_payload(
+    amt: usize,
+    src_wp: &String,
+    buf: &[u8],
+    hf: &mut HMACFrobnicator,
+    nonce_cache: &mut LruCache<String, bool>,
+) -> bool {
+    let msg = String::from_utf8_lossy(buf);
+
+    debug!("{} sent {} bytes, {:?}", src_wp, amt, msg); // {:?} has its own quotes
+
     match hf.verify(&msg) {
-        Ok(snonce) => match snonce.parse::<u64>() {
-            Ok(inonce) => {
-                let now = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .expect("systemtime fucked")
-                    .as_secs();
-                if inonce != now && inonce != (now - 1) {
-                    debug!("invalid nonce(!now)");
+        Ok(snonce) => {
+            if nonce_cache.get(&snonce).is_some() {
+                debug!("rejecting reused nonce");
+                // Arguably, an attacker could flood this cache with valid
+                // nonces and roll this one right off so it could be reused;
+                // but ... then in that case they can generate valid nonces, so
+                // who really cares if they can flood this cache?
+                return false;
+            }
+            nonce_cache.put(snonce.to_owned(), true);
+
+            let epos = snonce.find('$').unwrap_or(snonce.len());
+            let tnonce = snonce[..epos].to_string();
+            match tnonce.parse::<u64>() {
+                Ok(inonce) => {
+                    let now = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("systemtime fucked")
+                        .as_secs();
+                    if inonce != now && inonce != (now - 1) {
+                        debug!("invalid nonce(!now)");
+                        return false;
+                    }
+                }
+                Err(_) => {
+                    debug!("invalid nonce(!u64)");
                     return false;
                 }
             }
-            Err(_) => {
-                debug!("invalid nonce(!u64)");
-                return false;
-            }
-        },
+        }
         Err(_) => {
             debug!("invalid signature");
             return false;
         }
     };
 
-    info!("{} VERIFIED", src);
+    info!("{} VERIFIED", src_wp);
     true
 }
 
-fn listen_to_msgs(listen: String, hf: &mut HMACFrobnicator, command: &str) {
+#[tokio::main]
+async fn listen_to_msgs(
+    listen: String,
+    hf: &mut HMACFrobnicator,
+    command: &str,
+    nonce_cache: &mut LruCache<String, bool>,
+) {
     let mut buf = [0; 256];
-    let socket = UdpSocket::bind(listen.as_str()).expect("couldn't bind to socket");
+    let socket = UdpSocket::bind(listen.as_str()).await.expect("couldn't bind to socket");
 
     // we use listen.as_str() above so we don't "move" listen to the bind()
     // if we did, we'd get an error about using listen after move on the next line
     info!("listening to {}", listen);
 
     loop {
-        let (amt, src_addr) = socket.recv_from(&mut buf).expect("couldn't read from buffer");
+        let (amt, src_addr) = socket.recv_from(&mut buf).await.expect("couldn't read from buffer");
         let src_with_port = src_addr.to_string();
         let src = src_with_port[..src_with_port.find(':').unwrap()].to_string();
 
-        if process_payload(amt, &src, &buf[..amt], hf) {
-            let vars = HashMap::from([("ip".to_string(), src)]);
-            let cmd = strfmt(command, &vars).unwrap();
-
-            debug!("exec({})", cmd);
-            let child = Command::new("sh")
-                .arg("-c")
-                .arg(&cmd)
-                .current_dir("/")
-                .stdin(Stdio::null())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()
-                .expect("failed to fork child process");
-
-            let output = child.wait_with_output().expect("failed to wait for child");
-
-            if !output.status.success() {
-                error!(
-                    "fail({}) {}\n  stdout: {}\n  stderr: {}",
-                    &cmd,
-                    output.status, // e.g., "exit status: 1"
-                    String::from_utf8_lossy(&output.stdout),
-                    String::from_utf8_lossy(&output.stderr),
-                );
-            }
+        if process_payload(amt, &src_with_port, &buf[..amt], hf, nonce_cache).await {
+            allow_ip(&src, command).await;
         }
     }
 }
@@ -162,6 +198,7 @@ fn get_args() -> (bool, bool, String, String, String) {
 fn main() {
     let (verbose, syslog, key_str, listen, command) = get_args();
     let mut hf = HMACFrobnicator::new(&key_str);
+    let mut nonce_cache: LruCache<String, bool> = LruCache::new(100);
 
     /*
      * rust really hates globals
@@ -206,5 +243,5 @@ fn main() {
         env_logger::init_from_env(env);
     }
 
-    listen_to_msgs(listen, &mut hf, &command);
+    listen_to_msgs(listen, &mut hf, &command, &mut nonce_cache);
 }
