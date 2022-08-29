@@ -1,6 +1,7 @@
 max_width = 115
 hard_tabs = false
 tab_spaces = 4
+edition = "2021"
 
 # rustfmt --print-config default
 # max_width = 100
