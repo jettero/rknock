@@ -10,6 +10,7 @@ version: Cargo.toml
 
 Cargo.toml: input.toml Makefile $(HEADS)
 	@ echo making $@ using $< as input
+	@ rm -vf $@ || :
 	@ ( echo '# THIS FILE IS GENERATED #'; \
 		sed -e 's/^#.*//' -e 's/UNKNOWN/$(VERSION)/' $<; \
 		echo '# THIS FILE IS GENERATED #') \
