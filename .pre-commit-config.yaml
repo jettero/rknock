@@ -15,17 +15,18 @@ repos:
   hooks:
   - id: check-hooks-apply
   - id: check-useless-excludes
+- repo: https://github.com/doublify/pre-commit-rust
+  rev: master
+  hooks:
+  - id: cargo-check
+# - id: cargo-clippy
+
+# cargo fmt sucks... why is it different than rustfmt??
 - repo: local
   hooks:
   - id: rustfmt
     name: rustfmt
     entry: bash -c 'which rustfmt; sleep 1; rustfmt --check'
-    language: system
-    types: [rust]
-    pass_filenames: true
-  - id: clippy
-    name: clippy
-    entry: cargo clippy
     language: system
     types: [rust]
     pass_filenames: true
