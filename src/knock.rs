@@ -38,7 +38,7 @@ fn get_args() -> (bool, bool, String, String, bool) {
             .default_value(&env::var("KNOCK_SECRET").unwrap_or_else(|_| "secret".to_string()))
         )
         .arg(
-            arg!(target: --no-salt "disable salt (for testing?)")
+            arg!(no_salt: --"no-salt" "disable salt (for testing?)")
                 .action(ArgAction::SetTrue)
                 .required(false)
         )
@@ -46,7 +46,7 @@ fn get_args() -> (bool, bool, String, String, bool) {
 
     let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
     let go = *matches.get_one::<bool>("go").expect("defaulted by clap");
-    let disable_salt = *matches.get_one::<bool>("no-salt").expect("defaulted by clap");
+    let disable_salt = *matches.get_one::<bool>("no_salt").expect("defaulted by clap");
 
     let key = matches
         .get_one::<String>("secret")
@@ -70,14 +70,14 @@ fn main() {
         .as_secs();
 
     let nonce = if disable_salt {
+        format!("{}", now)
+    } else {
         let salt: String = thread_rng()
             .sample_iter(&Alphanumeric)
             .take(13)
             .map(char::from)
             .collect();
         format!("{}${}", now, salt)
-    } else {
-        format!("{}", now)
     };
 
     let msg = hf.sign(&nonce);
