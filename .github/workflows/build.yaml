@@ -24,11 +24,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - run: make Cargo.toml
+
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-
-      - run: make Cargo.toml
 
       - uses: actions-rs/cargo@v1
         with:

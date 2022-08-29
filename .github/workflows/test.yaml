@@ -18,11 +18,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: 'workaround for https://github.com/actions/checkout/issues/760'
+        run: 'git config --global --add safe.directory ${GITHUB_WORKSPACE}'
+
+      - run: make Cargo.toml
+
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-
-      - run: make Cargo.toml
 
       - uses: actions-rs/cargo@v1
         with:
