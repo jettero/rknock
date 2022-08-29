@@ -15,6 +15,7 @@ Cargo.toml: input.toml Makefile $(HEADS)
 		echo '# THIS FILE IS GENERATED #') \
 			| grep . > $@ \
 				&& grep -H ^version $@
+	@ chmod -c 0444 $@
 
 doc run test build: Cargo.toml
 	cargo $@
