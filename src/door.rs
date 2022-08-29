@@ -19,6 +19,19 @@ fn process_payload(amt: usize, src: &String, buf: &[u8], hf: &mut HMACFrobnicato
     let msg = String::from_utf8_lossy(buf);
     debug!("{} sent {} bytes, {:?}", src, amt, msg); // {:?} has its own quotes
 
+    let debug_sleep = std::time::Duration::from_millis(
+        std::env::var("KNOCK_DOOR_DEBUG_DELAY")
+            .unwrap_or_else(|_| "0".to_string())
+            .parse::<u64>()
+            .unwrap_or_else(|_| 0),
+    );
+
+    if debug_sleep.as_millis() > 0 {
+        // I can't think of anything that would make this useful outside debugs
+        // but decided to leave KNOCK_DOOR_DEBUG_DELAY exposed regardless.
+        std::thread::sleep(debug_sleep);
+    }
+
     match hf.verify(&msg) {
         Ok(snonce) => match snonce.parse::<u64>() {
             Ok(inonce) => {
