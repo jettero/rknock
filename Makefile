@@ -1,4 +1,3 @@
-
 RELEASES  := $(patsubst %,release-%, $(PLATFORMS))
 VERSION   := $(shell git describe --dirty --tags --match 'v[0-9][.]*' | sed -e s/^v// -e s/-g/-/)
 GIT_DIR   := $(shell git rev-parse --git-dir)
@@ -10,40 +9,40 @@ version: Cargo.toml
 
 Cargo.toml: input.toml Makefile $(HEADS)
 	@ echo making $@ using $< as input
-	@ rm -vf $@ || :
-	@ ( echo '# THIS FILE IS GENERATED #'; \
-		sed -e 's/^#.*//' -e 's/UNKNOWN/$(VERSION)/' $<; \
-		echo '# THIS FILE IS GENERATED #') \
+	@ (flock -x 9; chmod -c 0600 $@; \
+       (echo '# THIS FILE IS GENERATED #'; \
+        sed -e 's/^#.*//' -e 's/UNKNOWN/$(VERSION)/' $<; \
+        echo '# THIS FILE IS GENERATED #') \
 			| grep . > $@ \
-				&& grep -H ^version $@
-	@ chmod -c 0444 $@
+				&& grep -H ^version $@; \
+	  chmod -c 0444 $@) 9>/tmp/cargo.lockfile
 
 doc run test build: Cargo.toml
 	cargo $@
 
-clippy lint:
+clippy lint: Cargo.toml
 	cargo clippy
 
-auto-lint:
+auto-lint: Cargo.toml
 	cargo clippy --allow-dirty --fix
 
-%-help:
+%-help: Cargo.toml
 	cargo run --bin $* -- --help
 
-knock:
+knock: Cargo.toml
 	cargo run --bin knock -- --verbose
 
-door listen: no-listen
+door listen: no-listen Cargo.toml
 	cargo run --bin door -- --verbose
 
-listen-bg: no-listen
+listen-bg: no-listen Cargo.toml
 	cargo run --bin door -- --verbose & echo
 
 stop no-listen:
 	fuser -vkn udp 20022 || :
 	@echo
 
-spam: listen-bg
+spam: listen-bg Cargo.toml
 	for i in msg{1..3}; do sleep 0.5; echo $$i | nc -q1 -u localhost 20022; done
 	@+make --no-print-directory no-listen
 
