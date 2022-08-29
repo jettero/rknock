@@ -11,6 +11,10 @@ repos:
   - id: trailing-whitespace
   - id: mixed-line-ending
   - id: check-merge-conflict
+- repo: meta
+  hooks:
+  - id: check-hooks-apply
+  - id: check-useless-excludes
 - repo: local
   hooks:
   - id: rustfmt
@@ -19,7 +23,9 @@ repos:
     language: system
     types: [rust]
     pass_filenames: true
-- repo: meta
-  hooks:
-  - id: check-hooks-apply
-  - id: check-useless-excludes
+  - id: clippy
+    name: clippy
+    entry: rustfmt --check
+    language: system
+    types: [rust]
+    pass_filenames: true
