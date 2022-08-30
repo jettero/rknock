@@ -14,7 +14,9 @@ use lru::LruCache;
 use clap::{arg, value_parser, App, ArgAction};
 use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
+
 use tokio::net::UdpSocket;
+use tokio::task;
 
 use rlib::HMACFrobnicator;
 
@@ -58,7 +60,10 @@ async fn allow_ip(src: &String, command: &str) {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr),
         );
+        return;
     }
+
+    info!("allowed {}", src);
 }
 
 async fn process_payload(
@@ -133,7 +138,10 @@ async fn listen_to_msgs(
         let src = src_with_port[..src_with_port.find(':').unwrap()].to_string();
 
         if process_payload(amt, &src_with_port, &buf[..amt], hf, nonce_cache).await {
-            allow_ip(&src, command).await;
+            let a = src.to_owned();
+            let b = command.to_owned();
+
+            task::spawn(async move { allow_ip(&a, &b).await });
         }
     }
 }
