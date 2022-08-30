@@ -38,7 +38,7 @@ fn get_args() -> (bool, bool, String, String, bool) {
             .default_value(&env::var("KNOCK_SECRET").unwrap_or_else(|_| "secret".to_string()))
         )
         .arg(
-            arg!(no_salt: --"no-salt" "disable salt (for testing?)")
+            arg!(no_salt: --"no-salt" "this salt portion of the nonce isn't strictly necessary and can be disabled")
                 .action(ArgAction::SetTrue)
                 .required(false)
         )
