@@ -1,13 +1,30 @@
-use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction};
 use exec::execvp;
+use std::collections::HashMap;
 use std::env;
 use std::net::{Ipv4Addr, UdpSocket};
+use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction};
+use config::Config;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
 use rlib::HMACFrobnicator;
+
+fn config_file() -> String {
+    let path = match dirs::config_dir() {
+        Some(p) => Path::new(&p).join("knock").join("config.toml"),
+        None => match dirs::home_dir() {
+            Some(p) => Path::new(&p).join(".knock.toml"),
+            None => match env::var("HOME") {
+                Ok(p) => Path::new(&p).join(".knock.toml"),
+                Err(_) => Path::new(".").join("knock.toml"),
+            },
+        },
+    };
+    path.to_string_lossy().to_string()
+}
 
 fn get_args() -> (bool, bool, String, String, bool) {
     let matches = App::new("knock")
@@ -18,6 +35,12 @@ fn get_args() -> (bool, bool, String, String, bool) {
         .arg(
             arg!(go: -g --go "after sending the knock codes, immedaitely execvp(ssh) to the host")
                 .action(ArgAction::SetTrue)
+        )
+        .arg(
+            arg!(config: -c --config <CONFIG> "read this config file for settings")
+            .value_parser(value_parser!(String))
+            .required(false)
+            .default_value(&env::var("KNOCK_CONFIG").unwrap_or_else(|_| config_file()))
         )
         .arg(
             arg!(target: -t --target <HOSTNAME> "destination host to knock \
@@ -43,6 +66,20 @@ fn get_args() -> (bool, bool, String, String, bool) {
                 .required(false)
         )
         .get_matches();
+
+    let config = matches
+        .get_one::<String>("config")
+        .expect("defaulted by clap")
+        .to_string();
+
+    let settings: HashMap<String, String> =
+        match Config::builder().add_source(config::File::with_name(&config)).build() {
+            Ok(s) => match s.try_deserialize::<HashMap<String, String>>() {
+                Ok(s) => s,
+                Err(_) => HashMap::new(),
+            },
+            Err(_) => HashMap::new(),
+        };
 
     let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
     let go = *matches.get_one::<bool>("go").expect("defaulted by clap");
