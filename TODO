@@ -8,3 +8,6 @@
 - probably, since there's some overlap, we should have some kid of config.rs or build args in lib.rs or soemthing
 
 - we're using tokio, but the blocking sleep (or let's say blocking working with the firewall commands) is still all serial...
+
+- see if we can switch to the derive version of the arguments, it does in fact look cleaner
+  - https://docs.rs/clap/latest/clap/_derive/_tutorial/index.html
