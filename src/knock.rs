@@ -1,29 +1,31 @@
 use exec::execvp;
+
 use std::env;
 use std::net::{Ipv4Addr, UdpSocket};
+use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
-// use std::path::Path;
 
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
 use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction};
+use config::Config;
 
 use rlib::HMACFrobnicator;
 
-// fn config_file() -> String {
-//     let path = match dirs::config_dir() {
-//         Some(p) => Path::new(&p).join("knock").join("config.toml"),
-//         None => match dirs::home_dir() {
-//             Some(p) => Path::new(&p).join(".knock.toml"),
-//             None => match env::var("HOME") {
-//                 Ok(p) => Path::new(&p).join(".knock.toml"),
-//                 Err(_) => Path::new(".").join("knock.toml"),
-//             },
-//         },
-//     };
-//     path.to_string_lossy().to_string()
-// }
+fn config_file() -> String {
+    let path = match dirs::config_dir() {
+        Some(p) => Path::new(&p).join("knock").join("config.toml"),
+        None => match dirs::home_dir() {
+            Some(p) => Path::new(&p).join(".knock.toml"),
+            None => match env::var("HOME") {
+                Ok(p) => Path::new(&p).join(".knock.toml"),
+                Err(_) => Path::new(".").join("knock.toml"),
+            },
+        },
+    };
+    path.to_string_lossy().to_string()
+}
 
 fn get_args() -> (bool, bool, String, String, bool) {
     let matches = App::new("knock")
@@ -35,12 +37,12 @@ fn get_args() -> (bool, bool, String, String, bool) {
             arg!(go: -g --go "after sending the knock codes, immedaitely execvp(ssh) to the host")
                 .action(ArgAction::SetTrue)
         )
-        // .arg(
-        //     arg!(config: -c --config <CONFIG> "read this config file for settings")
-        //     .value_parser(value_parser!(String))
-        //     .required(false)
-        //     .default_value(&env::var("KNOCK_CONFIG").unwrap_or_else(|_| config_file()))
-        // )
+        .arg(
+            arg!(config: -c --config <CONFIG> "read this config file for settings")
+            .value_parser(value_parser!(String))
+            .required(false)
+            .default_value(&env::var("KNOCK_CONFIG").unwrap_or_else(|_| config_file()))
+        )
         .arg(
             arg!(target: -t --target <HOSTNAME> "destination host to knock \
                  (the port can also be specified after a colon). This value can \
@@ -66,10 +68,24 @@ fn get_args() -> (bool, bool, String, String, bool) {
         )
         .get_matches();
 
-    // let config = matches
-    //     .get_one::<String>("config")
-    //     .expect("defaulted by clap")
-    //     .to_string();
+    let config_file = matches
+        .get_one::<String>("config")
+        .expect("defaulted by clap")
+        .to_string();
+
+    let settings = Config::builder()
+        .add_source(config::File::with_name(&config_file))
+        .add_source(config::Environment::with_prefix("KNOCK"))
+        .build()
+        .unwrap();
+
+    println!("config_file.value_source = {:?}", matches.value_source("config"));
+    println!("settings: {:?}", settings);
+
+    // println!("{:?}", match matches.value_source("config") {
+    //     Some(ValueSource::CommandLine) => matches.value_of("config").expect("fuck"),
+    //     Some(ValueSource::DefaultValue) => config.
+    // }
 
     let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
     let go = *matches.get_one::<bool>("go").expect("defaulted by clap");
