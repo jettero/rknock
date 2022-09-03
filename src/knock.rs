@@ -3,6 +3,7 @@ use exec::execvp;
 use std::env;
 use std::net::{Ipv4Addr, UdpSocket};
 use std::path::Path;
+use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use rand::distributions::Alphanumeric;
@@ -29,28 +30,14 @@ fn config_file() -> String {
 
 macro_rules! grok_setting {
     ($matches:expr, $settings:expr, $field:literal, $T:ty) => {
-        println!("---");
-        println!(
-            "  matches.value_source({:?}):    {:?}",
-            $field,
-            $matches.value_source($field)
-        );
-        println!(
-            "  matches.get_one::<{}>({:?}): {:?}",
-            std::any::type_name::<$T>(),
-            $field,
-            $matches.get_one::<$T>($field).expect("fuck")
-        );
-
         match $matches.value_source($field) {
-            Some(ValueSource::CommandLine) => println!("  get value from cli"),
+            Some(ValueSource::CommandLine) => $matches.get_one::<$T>($field).expect("works").to_owned(),
             Some(ValueSource::DefaultValue) => match $settings.get::<$T>($field) {
-                Ok(_) => println!("value from config"),
-                Err(_) => println!("value from cli defaults"),
+                Ok(v) => v,
+                Err(_) => $matches.get_one::<$T>($field).expect("works").to_owned(),
             },
             _ => todo!(),
         }
-        println!("");
     };
 }
 
@@ -106,30 +93,44 @@ fn get_args() -> (bool, bool, String, String, bool) {
         .build()
         .unwrap();
 
-    grok_setting!(matches, settings, "target", String);
-    grok_setting!(matches, settings, "secret", String);
-    grok_setting!(matches, settings, "verbose", bool);
-    grok_setting!(matches, settings, "go", bool);
-    grok_setting!(matches, settings, "no_salt", bool);
+    let target: String = grok_setting!(matches, settings, "target", String);
+    let key: String = grok_setting!(matches, settings, "secret", String);
+    let verbose: bool = grok_setting!(matches, settings, "verbose", bool);
+    let go: bool = grok_setting!(matches, settings, "go", bool);
+    let disable_salt: bool = grok_setting!(matches, settings, "no_salt", bool);
 
-    let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
-    let go = *matches.get_one::<bool>("go").expect("defaulted by clap");
-    let disable_salt = *matches.get_one::<bool>("no_salt").expect("defaulted by clap");
-
-    let key = matches
-        .get_one::<String>("secret")
-        .expect("defaulted by clap")
-        .to_string();
-
-    let target = matches
-        .get_one::<String>("target")
-        .expect("defaulted by clap")
-        .to_string();
+    // if verbose {
+    //     println!("options:");
+    //     println!("  target:  {target:?}");
+    //     println!("  secret:  {key:?}");
+    //     println!("  verbose: {verbose:?}");
+    //     println!("  go:      {go:?}");
+    //     println!("  no-salt: {disable_salt:?}");
+    // }
 
     (verbose, go, key, target, disable_salt)
 }
 
-fn main() {
+macro_rules! my_err {
+    ($thing:expr, $preamble:expr, $code:expr) => {
+        match $thing.take_error() {
+            Ok(Some(error)) => {
+                eprintln!("{}: {error:?}", $preamble);
+                ExitCode::from($code)
+            }
+            Ok(None) => {
+                eprintln!("{}: host not found", $preamble);
+                ExitCode::from($code)
+            }
+            Err(error) => {
+                eprintln!("{}: {error:?}", $preamble);
+                ExitCode::from($code)
+            }
+        }
+    };
+}
+
+fn main() -> ExitCode {
     let (verbose, go, key_str, mut target, disable_salt) = get_args();
     let mut hf = HMACFrobnicator::new(&key_str);
     let now = SystemTime::now()
@@ -159,12 +160,32 @@ fn main() {
     }
 
     let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).expect("couldn't bind to 0.0.0.0:0 address");
+    // let addr = match target.to_socket_addrs() {
+    //     Ok(mut addrs) => match addrs.next() {
+    //         Some(v) => v,
+    //         None => {
+    //             eprintln!("error resolving target {:?}: host not found", target);
+    //             return ExitCode::from(7);
+    //         }
+    //     },
+    //     Err(e) => {
+    //         eprintln!("error resolving target {:?}: {:?}", target, e);
+    //         return ExitCode::from(7);
+    //     }
+    // };
 
-    socket.connect(&target).expect("connect function failed");
-    socket.send(msg.as_bytes()).expect("couldn't send message");
-
-    if go {
-        let err = execvp("ssh", &["ssh", &target]);
-        panic!("execvp(ssh {}) error: {}", target, err);
+    match socket.connect(&target) {
+        Ok(_) => match socket.send(msg.as_bytes()) {
+            Ok(_) => {
+                if go {
+                    let err = execvp("ssh", &["ssh", &target]);
+                    eprintln!("execvp(ssh {target}) error: {err:?}");
+                    return ExitCode::from(1);
+                }
+                ExitCode::from(0)
+            }
+            Err(_) => my_err!(socket, format!("failed to send {msg:?} to {target:?}"), 2),
+        },
+        Err(_) => my_err!(socket, format!("failed to connect to {target:?}"), 3),
     }
 }
