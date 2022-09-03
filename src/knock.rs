@@ -2,7 +2,6 @@ use exec::execvp;
 
 use std::env;
 use std::net::{Ipv4Addr, UdpSocket};
-use std::path::Path;
 use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -12,34 +11,7 @@ use rand::{thread_rng, Rng};
 use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction, ValueSource};
 use config::Config;
 
-use rlib::HMACFrobnicator;
-
-fn config_file() -> String {
-    let path = match dirs::config_dir() {
-        Some(p) => Path::new(&p).join("knock").join("config.toml"),
-        None => match dirs::home_dir() {
-            Some(p) => Path::new(&p).join(".knock.toml"),
-            None => match env::var("HOME") {
-                Ok(p) => Path::new(&p).join(".knock.toml"),
-                Err(_) => Path::new(".").join("knock.toml"),
-            },
-        },
-    };
-    path.to_string_lossy().to_string()
-}
-
-macro_rules! grok_setting {
-    ($matches:expr, $settings:expr, $field:literal, $T:ty) => {
-        match $matches.value_source($field) {
-            Some(ValueSource::CommandLine) => $matches.get_one::<$T>($field).expect("works").to_owned(),
-            Some(ValueSource::DefaultValue) => match $settings.get::<$T>($field) {
-                Ok(v) => v,
-                Err(_) => $matches.get_one::<$T>($field).expect("works").to_owned(),
-            },
-            _ => todo!(),
-        }
-    };
-}
+use rlib::{config_file, grok_setting, HMACFrobnicator};
 
 fn get_args() -> (bool, bool, String, String, bool) {
     let matches = App::new("knock")
