@@ -26,6 +26,9 @@
   - --config whatever.toml ⇒ 1 file
   - --config /etc/rknock.toml --config whatever.toml ⇒ 2 files
 
+- specifying the value type in both arg!() and grok_setting!() sucks. There
+  should be some way to discover the type from clap.
+
 - I'd like to get more of the dgram handler in the spawned
   coprocess (thread?). It's hard because I want to "globally"-ish
   track those nonces meaning they don't don't want to move into the
