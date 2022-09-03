@@ -27,7 +27,7 @@ fn get_args() -> (bool, bool, String, String, bool) {
             arg!(config: -c --config <CONFIG> "read this config file for settings")
             .value_parser(value_parser!(String))
             .required(false)
-            .default_value(&env::var("KNOCK_CONFIG").unwrap_or_else(|_| config_file()))
+            .default_value(&config_file())
         )
         .arg(
             arg!(target: -t --target <HOSTNAME> "destination host to knock \
@@ -35,7 +35,7 @@ fn get_args() -> (bool, bool, String, String, bool) {
                  also be set via the KNOCK_TARGET environment variable.")
                 .value_parser(value_parser!(String))
                 .required(false)
-                .default_value(&env::var("KNOCK_TARGET").unwrap_or_else(|_| "localhost:20022".to_string()))
+                .default_value("localhost:20022")
 
         )
         .arg(
@@ -45,7 +45,7 @@ fn get_args() -> (bool, bool, String, String, bool) {
                  can also be set in the environment variable KNOCK_SECRET.")
             .value_parser(value_parser!(String))
             .required(false)
-            .default_value(&env::var("KNOCK_SECRET").unwrap_or_else(|_| "secret".to_string()))
+            .default_value("secret")
         )
         .arg(
             arg!(no_salt: --"no-salt" "this salt portion of the nonce isn't strictly necessary and can be disabled")
