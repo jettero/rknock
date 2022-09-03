@@ -8,7 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
-use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction, ArgMatches, ValueSource};
+use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction, ValueSource};
 use config::Config;
 
 use rlib::HMACFrobnicator;
@@ -27,42 +27,31 @@ fn config_file() -> String {
     path.to_string_lossy().to_string()
 }
 
-fn get_from_switches_or_settings<
-    'de,
-    T: std::any::Any
-        + std::clone::Clone
-        + std::marker::Send
-        + std::marker::Sync
-        + 'static
-        + std::fmt::Debug
-        + serde::de::Deserialize<'de>,
->(
-    matches: &ArgMatches,
-    settings: &Config,
-    field: &str,
-) {
-    println!("---");
-    println!(
-        "  matches.value_source({:?}):    {:?}",
-        field,
-        matches.value_source(field)
-    );
-    println!(
-        "  matches.get_one::<{:?}>({:?}): {:?}",
-        std::any::type_name::<T>(),
-        field,
-        matches.get_one::<T>(field).expect("fuck")
-    );
+macro_rules! grok_setting {
+    ($matches:expr, $settings:expr, $field:literal, $T:ty) => {
+        println!("---");
+        println!(
+            "  matches.value_source({:?}):    {:?}",
+            $field,
+            $matches.value_source($field)
+        );
+        println!(
+            "  matches.get_one::<{}>({:?}): {:?}",
+            std::any::type_name::<$T>(),
+            $field,
+            $matches.get_one::<$T>($field).expect("fuck")
+        );
 
-    match matches.value_source(field) {
-        Some(ValueSource::CommandLine) => println!("  get value from cli"),
-        Some(ValueSource::DefaultValue) => match settings.get::<T>(field) {
-            Ok(_) => println!("value from config"),
-            Err(_) => println!("value from cli defaults"),
-        },
-        _ => todo!(),
-    }
-    println!("");
+        match $matches.value_source($field) {
+            Some(ValueSource::CommandLine) => println!("  get value from cli"),
+            Some(ValueSource::DefaultValue) => match $settings.get::<$T>($field) {
+                Ok(_) => println!("value from config"),
+                Err(_) => println!("value from cli defaults"),
+            },
+            _ => todo!(),
+        }
+        println!("");
+    };
 }
 
 fn get_args() -> (bool, bool, String, String, bool) {
@@ -117,16 +106,11 @@ fn get_args() -> (bool, bool, String, String, bool) {
         .build()
         .unwrap();
 
-    get_from_switches_or_settings::<String>(&matches, &settings, "target");
-    get_from_switches_or_settings::<String>(&matches, &settings, "secret");
-    get_from_switches_or_settings::<bool>(&matches, &settings, "verbose");
-    get_from_switches_or_settings::<bool>(&matches, &settings, "go");
-    get_from_switches_or_settings::<bool>(&matches, &settings, "no_salt");
-
-    // println!("{:?}", match matches.value_source("config") {
-    //     Some(ValueSource::CommandLine) => matches.value_of("config").expect("fuck"),
-    //     Some(ValueSource::DefaultValue) => config.
-    // }
+    grok_setting!(matches, settings, "target", String);
+    grok_setting!(matches, settings, "secret", String);
+    grok_setting!(matches, settings, "verbose", bool);
+    grok_setting!(matches, settings, "go", bool);
+    grok_setting!(matches, settings, "no_salt", bool);
 
     let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
     let go = *matches.get_one::<bool>("go").expect("defaulted by clap");
