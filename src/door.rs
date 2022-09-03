@@ -180,7 +180,9 @@ fn get_args() -> (bool, bool, String, String, String) {
             arg!(command: -c --command <SHELL_COMMAND> "The command to execute after a verified message is received. \
             Can also be set via KNOCK_DOOR_COMMAND. Note that the source IP will be passed via format!() \
             to this command string, so brace characters must be escaped (doubled) and the command should contain \
-            {ip} if applicable to the command.")
+            {ip} if applicable to the command. A leading '@' character
+            indicates the this value is a file from which to read the
+            command.")
             .value_parser(value_parser!(String))
             .required(false)
             .default_value("sudo nft add element inet firewall knock {{ {ip} timeout 5s }}")
