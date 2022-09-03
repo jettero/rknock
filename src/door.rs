@@ -1,24 +1,26 @@
-extern crate strfmt;
 use std::collections::HashMap;
+
+use std::process::{Command, Stdio};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+extern crate strfmt;
 use strfmt::strfmt;
 
 extern crate log;
 use env_logger::Env;
 use log::{debug, error, info, LevelFilter};
-use std::env;
 use syslog::{BasicLogger, Facility, Formatter3164};
 
 extern crate lru;
 use lru::LruCache;
 
-use clap::{arg, value_parser, App, ArgAction};
-use std::process::{Command, Stdio};
-use std::time::{SystemTime, UNIX_EPOCH};
+use clap::{arg, value_parser, App, ArgAction, ValueSource};
+use config::Config;
 
 use tokio::net::UdpSocket;
 use tokio::task;
 
-use rlib::HMACFrobnicator;
+use rlib::{config_file, grok_setting, HMACFrobnicator};
 
 async fn allow_ip(src: &String, command: &str) {
     let vars = HashMap::from([("ip".to_string(), src.to_string())]);
@@ -154,6 +156,12 @@ fn get_args() -> (bool, bool, String, String, String) {
         .arg(arg!(syslog: -S --syslog "log events and info to syslog instead of stdout").action(ArgAction::SetTrue))
         .arg(arg!(verbose: -v --verbose "print DEBUG level events instead of INFO").action(ArgAction::SetTrue))
         .arg(
+            arg!(config: -c --config <CONFIG> "read this config file for settings")
+            .value_parser(value_parser!(String))
+            .required(false)
+            .default_value(&config_file())
+        )
+        .arg(
             arg!(listen: -l --listen <ADDRINFO> "the IP and port on which to listen")
                 .value_parser(value_parser!(String))
                 .required(false)
@@ -166,7 +174,7 @@ fn get_args() -> (bool, bool, String, String, String) {
                  can also be set in the environment variable KNOCK_DOOR_SECRET.")
             .value_parser(value_parser!(String))
             .required(false)
-            .default_value(&env::var("KNOCK_DOOR_SECRET").unwrap_or_else(|_| "secret".to_string()))
+            .default_value("secret")
         )
         .arg(
             arg!(command: -c --command <SHELL_COMMAND> "The command to execute after a verified message is received. \
@@ -175,30 +183,23 @@ fn get_args() -> (bool, bool, String, String, String) {
             {ip} if applicable to the command.")
             .value_parser(value_parser!(String))
             .required(false)
-            .default_value(
-                &env::var("KNOCK_DOOR_COMMAND")
-                .unwrap_or_else(|_| "sudo nft add element inet firewall knock {{ {ip} timeout 5s }}".to_string())
-            )
+            .default_value("sudo nft add element inet firewall knock {{ {ip} timeout 5s }}")
         )
         .get_matches();
 
-    let verbose = *matches.get_one::<bool>("verbose").expect("defaulted by clap");
-    let syslog = *matches.get_one::<bool>("syslog").expect("defaulted by clap");
+    let settings = Config::builder()
+        .add_source(config::File::with_name(
+            matches.get_one::<String>("config").expect("defaulted by clap"),
+        ))
+        .add_source(config::Environment::with_prefix("KNOCK"))
+        .build()
+        .unwrap();
 
-    let key = matches
-        .get_one::<String>("secret")
-        .expect("defaulted by clap")
-        .to_string();
-
-    let listen = matches
-        .get_one::<String>("listen")
-        .expect("defaulted by clap")
-        .to_string();
-
-    let command = matches
-        .get_one::<String>("command")
-        .expect("defaulted by clap")
-        .to_string();
+    let verbose: bool = grok_setting!(matches, settings, "verbose", bool);
+    let syslog: bool = grok_setting!(matches, settings, "syslog", bool);
+    let key: String = grok_setting!(matches, settings, "secret", String);
+    let listen: String = grok_setting!(matches, settings, "listen", String);
+    let command: String = grok_setting!(matches, settings, "command", String);
 
     (verbose, syslog, key, listen, command)
 }
