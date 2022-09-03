@@ -20,7 +20,7 @@ use config::Config;
 use tokio::net::UdpSocket;
 use tokio::task;
 
-use rlib::{config_file, grok_setting, HMACFrobnicator};
+use rlib::{config_file, grok_setting, read_from_file_sometimes, HMACFrobnicator};
 
 async fn allow_ip(src: &String, command: &str) {
     let vars = HashMap::from([("ip".to_string(), src.to_string())]);
@@ -199,7 +199,7 @@ fn get_args() -> (bool, bool, String, String, String) {
     let syslog: bool = grok_setting!(matches, settings, "syslog", bool);
     let key: String = grok_setting!(matches, settings, "secret", String);
     let listen: String = grok_setting!(matches, settings, "listen", String);
-    let command: String = grok_setting!(matches, settings, "command", String);
+    let command: String = read_from_file_sometimes(&grok_setting!(matches, settings, "command", String));
 
     (verbose, syslog, key, listen, command)
 }

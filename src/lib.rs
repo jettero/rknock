@@ -5,19 +5,29 @@ use std::path::Path;
 use data_encoding::BASE64;
 use sha2::{Digest, Sha256};
 
+pub fn read_from_file_sometimes(blah: &str) -> String {
+    let blah_str: String = blah.to_string();
+
+    if blah_str.starts_with('@') {
+        let fname = &blah_str[1..];
+        return fs::read_to_string(fname)
+            .expect("couldn't read file")
+            .trim()
+            .to_string();
+    }
+
+    blah_str
+}
+
 pub struct HMACFrobnicator {
     key: String,
 }
 
 impl HMACFrobnicator {
     pub fn new(key: &str) -> Self {
-        let mut key_str: String = key.to_string();
-        if key_str.starts_with('@') {
-            let fname = &key_str[1..];
-            key_str = fs::read_to_string(fname).expect("couldn't read file");
-            key_str = key_str.trim().to_string();
+        HMACFrobnicator {
+            key: read_from_file_sometimes(key),
         }
-        HMACFrobnicator { key: key_str }
     }
 
     pub fn signature(&mut self, msg: &str) -> String {
