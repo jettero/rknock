@@ -1,39 +1,23 @@
 
-- '@' support for --command (like for --secret)
-  - I'm not happy with the command setup,
-  - I think we need an external script
+[x] '@' support for --command (like for --secret)
+[x] in addition to the various ENVIRONMENT_VARIABLES, we should
+    - https://github.com/clap-rs/clap/issues/748#issuecomment-1232161125
 
-- in addition to the various ENVIRONMENT_VARIABLES, we should
-  have some config file support
-  - probably, since there's some overlap, we should have some kid
-    of config.rs or build args in lib.rs or soemthing
-  - there aren't any good solutions for using clap with config
-    files yet…
-  - … but there are stubs to help me get to the point that I can
-    combine them in regardless:
-    https://github.com/clap-rs/clap/issues/748#issuecomment-1232161125
-    - note in particular, from the linked #2763 discussion, this
-      package clap_conf:
-      https://github.com/clap-rs/clap/discussions/2763#discussioncomment-2834309
-    - can't actually use clap_conf cuz it wants exactly ^2.3.0 of
-      clap and I don't wanna go that old
-    - but it's pretty close! \o/
+[ ] after we have config files, they should be layerd... /etc/rknock.toml,
+    ~/.rknock.toml, etc... but probably --config ~/.rknock sould overrride
+    other finds...
+    - /etc/rknock.toml + ~/.rknock.toml ⇒ 2 files
+    - --config whatever.toml ⇒ 1 file
+    - --config /etc/rknock.toml --config whatever.toml ⇒ 2 files
 
-- after we have config files, they should be layerd... /etc/rknock.toml,
-  ~/.rknock.toml, etc... but probably --config ~/.rknock sould overrride other
-  finds...
-  - /etc/rknock.toml + ~/.rknock.toml ⇒ 2 files
-  - --config whatever.toml ⇒ 1 file
-  - --config /etc/rknock.toml --config whatever.toml ⇒ 2 files
+[ ] specifying the value type in both arg!() and grok_setting!() sucks. There
+    should be some way to discover the type from clap.
 
-- specifying the value type in both arg!() and grok_setting!() sucks. There
-  should be some way to discover the type from clap.
+[ ] I'd like to get more of the dgram handler in the spawned
+    coprocess (thread?). It's hard because I want to "globally"-ish
+    track those nonces meaning they don't don't want to move into the
+    `async move {}` block.
 
-- I'd like to get more of the dgram handler in the spawned
-  coprocess (thread?). It's hard because I want to "globally"-ish
-  track those nonces meaning they don't don't want to move into the
-  `async move {}` block.
-
-- see if we can switch to the derive version of the arguments, it
-  does in fact look cleaner
-  - https://docs.rs/clap/latest/clap/_derive/_tutorial/index.html
+[ ] see if we can switch to the derive version of the arguments, it
+    does in fact look cleaner
+    - https://docs.rs/clap/latest/clap/_derive/_tutorial/index.html
