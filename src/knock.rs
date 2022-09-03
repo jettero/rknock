@@ -54,13 +54,10 @@ fn get_args() -> (bool, bool, String, String, bool) {
         )
         .get_matches();
 
-    let config_file = matches
-        .get_one::<String>("config")
-        .expect("defaulted by clap")
-        .to_string();
-
     let settings = Config::builder()
-        .add_source(config::File::with_name(&config_file))
+        .add_source(config::File::with_name(
+            matches.get_one::<String>("config").expect("defaulted by clap"),
+        ))
         .add_source(config::Environment::with_prefix("KNOCK"))
         .build()
         .unwrap();
