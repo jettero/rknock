@@ -19,6 +19,13 @@
       clap and I don't wanna go that old
     - but it's pretty close! \o/
 
+- after we have config files, they should be layerd... /etc/rknock.toml,
+  ~/.rknock.toml, etc... but probably --config ~/.rknock sould overrride other
+  finds...
+  - /etc/rknock.toml + ~/.rknock.toml ⇒ 2 files
+  - --config whatever.toml ⇒ 1 file
+  - --config /etc/rknock.toml --config whatever.toml ⇒ 2 files
+
 - I'd like to get more of the dgram handler in the spawned
   coprocess (thread?). It's hard because I want to "globally"-ish
   track those nonces meaning they don't don't want to move into the
