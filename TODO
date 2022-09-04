@@ -21,3 +21,5 @@
 [ ] see if we can switch to the derive version of the arguments, it
     does in fact look cleaner
     - https://docs.rs/clap/latest/clap/_derive/_tutorial/index.html
+
+[ ] we need like a billion more tests
