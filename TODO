@@ -3,7 +3,7 @@
 [x] in addition to the various ENVIRONMENT_VARIABLES, we should
     - https://github.com/clap-rs/clap/issues/748#issuecomment-1232161125
 
-[ ] after we have config files, they should be layerd... /etc/rknock.toml,
+[x] after we have config files, they should be layerd... /etc/rknock.toml,
     ~/.rknock.toml, etc... but probably --config ~/.rknock sould overrride
     other finds...
     - /etc/rknock.toml + ~/.rknock.toml ⇒ 2 files

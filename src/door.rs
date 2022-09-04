@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-
-use std::process::{Command, Stdio};
+use std::error::Error;
+use std::process::{Command, ExitCode, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 extern crate strfmt;
@@ -20,7 +20,7 @@ use config::Config;
 use tokio::net::UdpSocket;
 use tokio::task;
 
-use rlib::{config_file, grok_setting, read_from_file_sometimes, HMACFrobnicator};
+use rlib::{config_filez, grok_setting, is_default, read_from_file_sometimes, HMACFrobnicator};
 
 async fn allow_ip(src: &String, command: &str) {
     let vars = HashMap::from([("ip".to_string(), src.to_string())]);
@@ -148,7 +148,7 @@ async fn listen_to_msgs(
     }
 }
 
-fn get_args() -> (bool, bool, String, String, String) {
+fn get_args() -> Result<(bool, bool, String, String, String), Box<dyn Error>> {
     let matches = App::new("door")
         .version("0.0.0")
         .author("Paul Miller <paul@jettero.pl>")
@@ -158,8 +158,9 @@ fn get_args() -> (bool, bool, String, String, String) {
         .arg(
             arg!(config: -c --config <CONFIG> "read this config file for settings")
             .value_parser(value_parser!(String))
-            .required(false)
-            .default_value(&config_file())
+            .multiple(true)
+            .required(false) // I hate this:
+            .default_values(&config_filez().iter().map(|a| a.as_str()).collect::<Vec<&str>>())
         )
         .arg(
             arg!(listen: -l --listen <ADDRINFO> "the IP and port on which to listen")
@@ -189,13 +190,15 @@ fn get_args() -> (bool, bool, String, String, String) {
         )
         .get_matches();
 
-    let settings = Config::builder()
-        .add_source(config::File::with_name(
-            matches.get_one::<String>("config").expect("defaulted by clap"),
-        ))
-        .add_source(config::Environment::with_prefix("KNOCK"))
-        .build()
-        .unwrap();
+    let filez = matches.get_many::<String>("config").expect("defaulted by clap");
+    let def = is_default!(matches, "config");
+    let mut config = Config::builder();
+    for item in filez {
+        config = config.add_source(config::File::with_name(item).required(!def));
+    }
+    config = config.add_source(config::Environment::with_prefix("KNOCK"));
+
+    let settings = config.build()?;
 
     let verbose: bool = grok_setting!(matches, settings, "verbose", bool);
     let syslog: bool = grok_setting!(matches, settings, "syslog", bool);
@@ -203,11 +206,17 @@ fn get_args() -> (bool, bool, String, String, String) {
     let listen: String = grok_setting!(matches, settings, "listen", String);
     let command: String = read_from_file_sometimes(&grok_setting!(matches, settings, "command", String));
 
-    (verbose, syslog, key, listen, command)
+    Ok((verbose, syslog, key, listen, command))
 }
 
-fn main() {
-    let (verbose, syslog, key_str, listen, command) = get_args();
+fn main() -> ExitCode {
+    let (verbose, syslog, key_str, listen, command) = match get_args() {
+        Ok(v) => v,
+        Err(error) => {
+            eprintln!("error building config: {error:?}");
+            return ExitCode::from(27);
+        }
+    };
     let mut hf = HMACFrobnicator::new(&key_str);
     let mut nonce_cache: LruCache<String, bool> = LruCache::new(100);
 
@@ -248,6 +257,8 @@ fn main() {
             .expect("logging setup failure");
     } else {
         let env = Env::default()
+            // TODO: KNOCK_DOOR_LOG_LEVEL and LOG_STYLE should probably be available via configs...
+            // do we even need Env::default? what about env_logger itself?
             .filter_or("KNOCK_DOOR_LOG_LEVEL", if verbose { "debug" } else { "info" })
             .write_style_or("KNOCK_DOOR_LOG_STYLE", "always");
 
@@ -255,4 +266,6 @@ fn main() {
     }
 
     listen_to_msgs(listen, &mut hf, &command, &mut nonce_cache);
+
+    ExitCode::from(0)
 }

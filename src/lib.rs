@@ -110,18 +110,40 @@ mod tests {
     }
 }
 
-pub fn config_file() -> String {
-    let path = match dirs::config_dir() {
-        Some(p) => Path::new(&p).join("rknock").join("config.toml"),
-        None => match dirs::home_dir() {
-            Some(p) => Path::new(&p).join(".rknock.toml"),
-            None => match env::var("HOME") {
-                Ok(p) => Path::new(&p).join(".rknock.toml"),
-                Err(_) => Path::new(".").join("rknock.toml"),
-            },
-        },
+pub fn config_filez() -> Vec<String> {
+    let mut ret: Vec<String> = vec![
+        // TODO: we're carefully platform independent by using config_dir and
+        // Path::*, but then we do this??  Yeah, well, these programs probably
+        // only work on loonix anyway. Also, config_dir doesn't help with these. Meh.
+        "/etc/rknock.toml".to_string(),
+        "/etc/rknock/config.toml".to_string(),
+    ];
+
+    if let Some(v) = dirs::config_dir() {
+        ret.push(
+            Path::new(&v)
+                .join("rknock")
+                .join("config.toml")
+                .to_string_lossy()
+                .to_string(),
+        )
+    }
+
+    if let Ok(v) = env::var("HOME") {
+        ret.push(Path::new(&v).join(".rknock.toml").to_string_lossy().to_string())
+    }
+
+    ret
+}
+
+#[macro_export]
+macro_rules! is_default {
+    ($matches:expr, $field:literal) => {
+        match $matches.value_source($field) {
+            Some(ValueSource::DefaultValue) => true,
+            _ => false,
+        }
     };
-    path.to_string_lossy().to_string()
 }
 
 #[macro_export]

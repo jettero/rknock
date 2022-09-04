@@ -1,6 +1,7 @@
 use exec::execvp;
 
 use std::env;
+use std::error::Error;
 use std::net::{Ipv4Addr, UdpSocket};
 use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -11,9 +12,9 @@ use rand::{thread_rng, Rng};
 use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction, ValueSource};
 use config::Config;
 
-use rlib::{config_file, grok_setting, HMACFrobnicator};
+use rlib::{config_filez, grok_setting, is_default, HMACFrobnicator};
 
-fn get_args() -> (bool, bool, String, String, bool) {
+fn get_args() -> Result<(bool, bool, String, String, bool), Box<dyn Error>> {
     let matches = App::new("knock")
         .version(crate_version!())
         .author(crate_authors!(", "))
@@ -27,7 +28,8 @@ fn get_args() -> (bool, bool, String, String, bool) {
             arg!(config: -c --config <CONFIG> "read this config file for settings")
             .value_parser(value_parser!(String))
             .required(false)
-            .default_value(&config_file())
+            .multiple(true) // I hate this:
+            .default_values(&config_filez().iter().map(|a| a.as_str()).collect::<Vec<&str>>())
         )
         .arg(
             arg!(target: -t --target <HOSTNAME> "destination host to knock \
@@ -54,13 +56,15 @@ fn get_args() -> (bool, bool, String, String, bool) {
         )
         .get_matches();
 
-    let settings = Config::builder()
-        .add_source(config::File::with_name(
-            matches.get_one::<String>("config").expect("defaulted by clap"),
-        ))
-        .add_source(config::Environment::with_prefix("KNOCK"))
-        .build()
-        .unwrap();
+    let filez = matches.get_many::<String>("config").expect("defaulted by clap");
+    let def = is_default!(matches, "config");
+    let mut config = Config::builder();
+    for item in filez {
+        config = config.add_source(config::File::with_name(item).required(!def));
+    }
+    config = config.add_source(config::Environment::with_prefix("KNOCK"));
+
+    let settings = config.build()?;
 
     let target: String = grok_setting!(matches, settings, "target", String);
     let key: String = grok_setting!(matches, settings, "secret", String);
@@ -77,10 +81,10 @@ fn get_args() -> (bool, bool, String, String, bool) {
     //     println!("  no-salt: {disable_salt:?}");
     // }
 
-    (verbose, go, key, target, disable_salt)
+    Ok((verbose, go, key, target, disable_salt))
 }
 
-macro_rules! my_err {
+macro_rules! my_sock_err {
     ($thing:expr, $preamble:expr, $code:expr) => {
         match $thing.take_error() {
             Ok(Some(error)) => {
@@ -100,7 +104,13 @@ macro_rules! my_err {
 }
 
 fn main() -> ExitCode {
-    let (verbose, go, key_str, mut target, disable_salt) = get_args();
+    let (verbose, go, key_str, mut target, disable_salt) = match get_args() {
+        Ok(v) => v,
+        Err(error) => {
+            eprintln!("error building config: {error:?}");
+            return ExitCode::from(27);
+        }
+    };
     let mut hf = HMACFrobnicator::new(&key_str);
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -153,8 +163,8 @@ fn main() -> ExitCode {
                 }
                 ExitCode::from(0)
             }
-            Err(_) => my_err!(socket, format!("failed to send {msg:?} to {target:?}"), 2),
+            Err(_) => my_sock_err!(socket, format!("failed to send {msg:?} to {target:?}"), 2),
         },
-        Err(_) => my_err!(socket, format!("failed to connect to {target:?}"), 3),
+        Err(_) => my_sock_err!(socket, format!("failed to connect to {target:?}"), 3),
     }
 }
