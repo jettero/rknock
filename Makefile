@@ -63,4 +63,18 @@ clean:
 	git clean -dfx
 
 release:
-	cargo build --release --locked
+	cargo build --release
+
+target/debug/%: src/%.rs src/lib.rs Cargo.toml
+	cargo build --bin $*
+
+target/release/%: src/%.rs src/lib.rs Cargo.toml
+	cargo build --bin $* --release
+
+/usr/bin/rknock: target/release/knock
+	sudo install -o 0 -g 0 -m 0755 -v $< $@
+
+/usr/bin/rk_door: target/release/door
+	sudo install -o 0 -g 0 -m 0755 -v $< $@
+
+install: /usr/bin/rknock /usr/bin/rk_door
