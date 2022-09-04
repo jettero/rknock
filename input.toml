@@ -19,10 +19,12 @@ doctest = false
 [[bin]]
 name = "knock"
 path = "src/knock.rs"
+test = false
 
 [[bin]]
 name = "door"
 path = "src/door.rs"
+test = false
 
 [dev-dependencies]
 assert_cmd = "2.0.4"
