@@ -156,7 +156,7 @@ fn get_args() -> Result<(bool, bool, String, String, String), Box<dyn Error>> {
         .arg(arg!(syslog: -S --syslog "log events and info to syslog instead of stdout").action(ArgAction::SetTrue))
         .arg(arg!(verbose: -v --verbose "print DEBUG level events instead of INFO").action(ArgAction::SetTrue))
         .arg(
-            arg!(config: -c --config <CONFIG> "read this config file for settings")
+            arg!(config: -C --config <CONFIG> "read this config file for settings")
             .value_parser(value_parser!(String))
             .multiple(true)
             .required(false) // I hate this:

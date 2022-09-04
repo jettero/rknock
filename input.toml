@@ -24,6 +24,10 @@ path = "src/knock.rs"
 name = "door"
 path = "src/door.rs"
 
+[dev-dependencies]
+assert_cmd = "2.0.4"
+predicates = "2.1.1"
+
 [dependencies]
 # clap recommends "~3.2.8" ... which means what now??
 #   https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html

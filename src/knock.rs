@@ -18,14 +18,14 @@ fn get_args() -> Result<(bool, bool, String, String, bool), Box<dyn Error>> {
     let matches = App::new("knock")
         .version(crate_version!())
         .author(crate_authors!(", "))
-        .about("knock on doors")
+        .about("Knocks on doors")
         .arg(arg!(verbose: -v --verbose "say what's happening on stdout").action(ArgAction::SetTrue))
         .arg(
             arg!(go: -g --go "after sending the knock codes, immedaitely execvp(ssh) to the host")
                 .action(ArgAction::SetTrue)
         )
         .arg(
-            arg!(config: -c --config <CONFIG> "read this config file for settings")
+            arg!(config: -C --config <CONFIG> "read this config file for settings")
             .value_parser(value_parser!(String))
             .required(false)
             .multiple(true) // I hate this:
