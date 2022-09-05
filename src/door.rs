@@ -196,7 +196,7 @@ fn get_args() -> Result<(bool, bool, String, String, String), Box<dyn Error>> {
     for item in filez {
         config = config.add_source(config::File::with_name(item).required(!def));
     }
-    config = config.add_source(config::Environment::with_prefix("KNOCK"));
+    config = config.add_source(config::Environment::with_prefix("KNOCK_DOOR"));
 
     let settings = config.build()?;
 
