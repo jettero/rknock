@@ -23,3 +23,8 @@
     - https://docs.rs/clap/latest/clap/_derive/_tutorial/index.html
 
 [ ] we need like a billion more tests
+
+[ ] combine the multiple clap::App s into one clapplication with knock and door subcommands
+    [ ] then merge all settings and options logic into lib
+    [ ] in such a way that settings/config read from the clapplication to decide what
+        to get from the settings.toml file
