@@ -34,7 +34,7 @@ impl Pfft for App<'_> {
     }
 }
 
-fn get_args() -> Result<(bool, bool, String, String, bool), Box<dyn Error>> {
+fn get_args() -> Result<(bool, bool, String, String, bool, u64), Box<dyn Error>> {
     let matches = App::new("knock")
         .version(crate_version!())
         .author(crate_authors!(", "))
@@ -70,6 +70,12 @@ fn get_args() -> Result<(bool, bool, String, String, bool), Box<dyn Error>> {
             .default_value("secret")
         )
         .arg(
+            arg!(time_code: --"time-code" <TIMESTAMP> "use this timestamp instead of the current time")
+                .value_parser(value_parser!(u64))
+                .required(false)
+                .default_value("0")
+        )
+        .arg(
             arg!(no_salt: --"no-salt" "this salt portion of the nonce isn't strictly necessary and can be disabled")
                 .action(ArgAction::SetTrue)
                 .required(false)
@@ -91,17 +97,19 @@ fn get_args() -> Result<(bool, bool, String, String, bool), Box<dyn Error>> {
     let verbose: bool = grok_setting!(matches, settings, "verbose", bool);
     let go: bool = grok_setting!(matches, settings, "go", bool);
     let disable_salt: bool = grok_setting!(matches, settings, "no_salt", bool);
+    let time_code: u64 = grok_setting!(matches, settings, "time_code", u64);
 
     // if verbose {
     //     println!("options:");
-    //     println!("  target:  {target:?}");
-    //     println!("  secret:  {key:?}");
-    //     println!("  verbose: {verbose:?}");
-    //     println!("  go:      {go:?}");
-    //     println!("  no-salt: {disable_salt:?}");
+    //     println!("  target:    {target:?}");
+    //     println!("  secret:    {key:?}");
+    //     println!("  verbose:   {verbose:?}");
+    //     println!("  go:        {go:?}");
+    //     println!("  no-salt:   {disable_salt:?}");
+    //     println!("  time-code: {time_code:?}");
     // }
 
-    Ok((verbose, go, key, target, disable_salt))
+    Ok((verbose, go, key, target, disable_salt, time_code))
 }
 
 macro_rules! my_sock_err {
@@ -124,7 +132,7 @@ macro_rules! my_sock_err {
 }
 
 fn main() -> ExitCode {
-    let (verbose, go, key_str, mut target, disable_salt) = match get_args() {
+    let (verbose, go, key_str, mut target, disable_salt, time_code) = match get_args() {
         Ok(v) => v,
         Err(error) => {
             eprintln!("error building config: {error:?}");
@@ -132,10 +140,14 @@ fn main() -> ExitCode {
         }
     };
     let mut hf = HMACFrobnicator::new(&key_str);
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("systemtime fucked")
-        .as_secs();
+    let now = if time_code > 0 {
+        time_code
+    } else {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("systemtime fucked")
+            .as_secs()
+    };
 
     let nonce = if disable_salt {
         format!("{}", now)
@@ -192,9 +204,14 @@ mod tests {
     fn unsalted_knock() -> Result<(), Box<dyn Error>> {
         env::set_var("KNOCK_CONFIG_SEARCH", "/dev/null");
         env::set_var("_JUST_TESTING_MAIN_msg", "1");
-        env::set_var("_JUST_TESTING_MAIN_args", "___,--secret,spooky,--verbose");
+        env::set_var("_JUST_TESTING_MAIN_args", "___,--secret=spooky,--no-salt,--time-code=7");
 
         main();
+
+        assert_eq!(
+            env::var("_JUST_TESTING_MAIN_msg")?,
+            "7:4ysptJn/m3dPxisFiC36xbacV02Nf32pCwrJ18KXOcs="
+        );
 
         Ok(())
     }
