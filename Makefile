@@ -17,7 +17,7 @@ Cargo.toml: input.toml Makefile $(HEADS)
 	  chmod -c 0444 $@) 9>/tmp/cargo.lockfile
 
 doc run test build: Cargo.toml
-	cargo $@
+	cargo $@ --color=always
 
 clippy lint: Cargo.toml
 	cargo clippy

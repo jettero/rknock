@@ -9,10 +9,30 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
-use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction, ValueSource};
+use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction, ArgMatches, ValueSource};
 use config::Config;
 
 use rlib::{config_filez, grok_setting, is_default, HMACFrobnicator};
+
+trait Pfft {
+    fn my_get_matches(self) -> ArgMatches;
+}
+
+impl Pfft for App<'_> {
+    #[cfg(not(test))]
+    fn my_get_matches(self) -> ArgMatches {
+        self.get_matches()
+    }
+
+    #[cfg(test)]
+    fn my_get_matches(self) -> ArgMatches {
+        if let Ok(v) = env::var("_JUST_TESTING_MAIN_args") {
+            self.get_matches_from(v.split(",").map(|a| a.to_string()).collect::<Vec<String>>())
+        } else {
+            self.get_matches()
+        }
+    }
+}
 
 fn get_args() -> Result<(bool, bool, String, String, bool), Box<dyn Error>> {
     let matches = App::new("knock")
@@ -54,7 +74,7 @@ fn get_args() -> Result<(bool, bool, String, String, bool), Box<dyn Error>> {
                 .action(ArgAction::SetTrue)
                 .required(false)
         )
-        .get_matches();
+        .my_get_matches();
 
     let filez = matches.get_many::<String>("config").expect("defaulted by clap");
     let def = is_default!(matches, "config");
@@ -138,21 +158,14 @@ fn main() -> ExitCode {
         println!("send(\"{}\") → {}", msg, target);
     }
 
-    let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).expect("couldn't bind to 0.0.0.0:0 address");
-    // let addr = match target.to_socket_addrs() {
-    //     Ok(mut addrs) => match addrs.next() {
-    //         Some(v) => v,
-    //         None => {
-    //             eprintln!("error resolving target {:?}: host not found", target);
-    //             return ExitCode::from(7);
-    //         }
-    //     },
-    //     Err(e) => {
-    //         eprintln!("error resolving target {:?}: {:?}", target, e);
-    //         return ExitCode::from(7);
-    //     }
-    // };
+    #[cfg(test)]
+    if let Ok(v) = env::var("_JUST_TESTING_MAIN_msg") {
+        if v == "1" {
+            env::set_var("_JUST_TESTING_MAIN_msg", &msg);
+        }
+    }
 
+    let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).expect("couldn't bind to 0.0.0.0:0 address");
     match socket.connect(&target) {
         Ok(_) => match socket.send(msg.as_bytes()) {
             Ok(_) => {
@@ -166,5 +179,23 @@ fn main() -> ExitCode {
             Err(_) => my_sock_err!(socket, format!("failed to send {msg:?} to {target:?}"), 2),
         },
         Err(_) => my_sock_err!(socket, format!("failed to connect to {target:?}"), 3),
+    }
+}
+
+//---------=: TEST
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::error::Error;
+
+    #[test]
+    fn unsalted_knock() -> Result<(), Box<dyn Error>> {
+        env::set_var("KNOCK_CONFIG_SEARCH", "/dev/null");
+        env::set_var("_JUST_TESTING_MAIN_msg", "1");
+        env::set_var("_JUST_TESTING_MAIN_args", "___,--secret,spooky,--verbose");
+
+        main();
+
+        Ok(())
     }
 }

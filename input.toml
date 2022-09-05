@@ -19,7 +19,6 @@ doctest = false
 [[bin]]
 name = "knock"
 path = "src/knock.rs"
-test = false
 
 [[bin]]
 name = "door"
