@@ -110,7 +110,11 @@ mod tests {
     }
 }
 
-pub fn config_filez() -> Vec<String> {
+pub fn config_filez(env_override_prefix: &str) -> Vec<String> {
+    if let Ok(v) = env::var(format!("{env_override_prefix}_CONFIG_SEARCH")) {
+        return v.split(",").map(|a| a.to_string()).collect::<Vec<String>>();
+    }
+
     let mut ret: Vec<String> = vec![
         // TODO: we're carefully platform independent by using config_dir and
         // Path::*, but then we do this??  Yeah, well, these programs probably

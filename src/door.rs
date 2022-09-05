@@ -160,7 +160,7 @@ fn get_args() -> Result<(bool, bool, String, String, String), Box<dyn Error>> {
             .value_parser(value_parser!(String))
             .multiple(true)
             .required(false) // I hate this:
-            .default_values(&config_filez().iter().map(|a| a.as_str()).collect::<Vec<&str>>())
+            .default_values(&config_filez("KNOCK_DOOR").iter().map(|a| a.as_str()).collect::<Vec<&str>>())
         )
         .arg(
             arg!(listen: -l --listen <ADDRINFO> "the IP and port on which to listen")

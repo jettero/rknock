@@ -29,7 +29,7 @@ fn get_args() -> Result<(bool, bool, String, String, bool), Box<dyn Error>> {
             .value_parser(value_parser!(String))
             .required(false)
             .multiple(true) // I hate this:
-            .default_values(&config_filez().iter().map(|a| a.as_str()).collect::<Vec<&str>>())
+            .default_values(&config_filez("KNOCK").iter().map(|a| a.as_str()).collect::<Vec<&str>>())
         )
         .arg(
             arg!(target: -t --target <HOSTNAME> "destination host to knock \
