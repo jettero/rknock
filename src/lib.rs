@@ -69,47 +69,6 @@ impl HMACFrobnicator {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /* echo -n 1234:; echo -n "1234:secret key" | sha256sum | cut -d' ' -f1 \
-         | xxd -r -p | uuencode -m supz | head -n 2 | tail -n 1
-       1234:iKC5sOqv+cjt3IG3qfQ/B4Xwyvz7069Zl7hGN+7ea2E=
-    */
-    static KNOWN: &'static str = "1234:iKC5sOqv+cjt3IG3qfQ/B4Xwyvz7069Zl7hGN+7ea2E=";
-    static K_BAD: &'static str = "1234:iKC6sOqv+cjt3IG3qfQ/B4Xwyvz7069Zl7hGN+7ea2E=";
-
-    #[test]
-    fn sign_something() {
-        let mut hmt = HMACFrobnicator::new("secret key");
-        let msg = hmt.sign("1234");
-
-        assert_eq!(msg, KNOWN);
-    }
-
-    #[test]
-    fn verify_something() -> Result<(), String> {
-        let mut hmt = HMACFrobnicator::new("secret key");
-
-        match hmt.verify(KNOWN) {
-            Ok(_) => Ok(()),
-            Err(_) => Err("should have passed".to_owned()),
-        }
-    }
-
-    #[test]
-    fn fail_verify_something() -> Result<(), String> {
-        let mut hmt = HMACFrobnicator::new("secret key");
-
-        // here we have to reverse the result
-        match hmt.verify(K_BAD) {
-            Err(_) => Ok(()),
-            Ok(_) => Err("should have failed".to_owned()),
-        }
-    }
-}
-
 pub fn config_filez(env_override_prefix: &str) -> Vec<String> {
     if let Ok(v) = env::var(format!("{env_override_prefix}_CONFIG_SEARCH")) {
         return v.split(",").map(|a| a.to_string()).collect::<Vec<String>>();
@@ -162,4 +121,62 @@ macro_rules! grok_setting {
             _ => todo!(),
         }
     };
+}
+
+//---------=: TEST
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /* echo -n 1234:; echo -n "1234:secret key" | sha256sum | cut -d' ' -f1 \
+         | xxd -r -p | uuencode -m supz | head -n 2 | tail -n 1
+       1234:iKC5sOqv+cjt3IG3qfQ/B4Xwyvz7069Zl7hGN+7ea2E=
+    */
+    static KNOWN: &'static str = "1234:iKC5sOqv+cjt3IG3qfQ/B4Xwyvz7069Zl7hGN+7ea2E=";
+    static K_BAD: &'static str = "1234:iKC6sOqv+cjt3IG3qfQ/B4Xwyvz7069Zl7hGN+7ea2E=";
+
+    #[test]
+    fn sign_something() {
+        let mut hmt = HMACFrobnicator::new("secret key");
+        let msg = hmt.sign("1234");
+
+        assert_eq!(msg, KNOWN);
+    }
+
+    #[test]
+    fn verify_something() -> Result<(), String> {
+        let mut hmt = HMACFrobnicator::new("secret key");
+
+        match hmt.verify(KNOWN) {
+            Ok(_) => Ok(()),
+            Err(_) => Err("should have passed".to_owned()),
+        }
+    }
+
+    #[test]
+    fn fail_verify_something() -> Result<(), String> {
+        let mut hmt = HMACFrobnicator::new("secret key");
+
+        // here we have to reverse the result
+        match hmt.verify(K_BAD) {
+            Err(_) => Ok(()),
+            Ok(_) => Err("should have failed".to_owned()),
+        }
+    }
+
+    #[test]
+    fn config_filez_works() -> Result<(), String> {
+        let k = "KNOCK_STRING_THING";
+        let f1 = config_filez(k);
+
+        assert_eq!(f1[0], "/etc/rknock.toml");
+
+        env::set_var(format!("{k}_CONFIG_SEARCH"), "supz,mang");
+        let f2 = config_filez(k);
+
+        assert_eq!(f2[0], "supz");
+        assert_eq!(f2[1], "mang");
+
+        Ok(())
+    }
 }
