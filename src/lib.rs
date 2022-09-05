@@ -165,7 +165,7 @@ mod tests {
     }
 
     #[test]
-    fn config_filez_works() -> Result<(), String> {
+    fn config_filez_works() {
         let k = "KNOCK_STRING_THING";
         let f1 = config_filez(k);
 
@@ -176,7 +176,11 @@ mod tests {
 
         assert_eq!(f2[0], "supz");
         assert_eq!(f2[1], "mang");
+    }
 
-        Ok(())
+    #[test]
+    fn test_files_sometimes() {
+        assert_eq!(read_from_file_sometimes("Makefile"), "Makefile");
+        assert!(read_from_file_sometimes("@Makefile").trim().starts_with("VERSION"));
     }
 }
