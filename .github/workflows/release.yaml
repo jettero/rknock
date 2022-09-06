@@ -1,0 +1,65 @@
+
+name: release
+
+on:
+  push:
+    tags:
+      - v*.*.*-?*
+  workflow_dispatch:
+    inputs: {}
+
+jobs:
+
+  build:
+    uses: ./.github/workflows/build.yaml
+
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs: build
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    strategy:
+      matrix:
+        platform:
+          - x86_64-linux-gnu
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-${{ hashFiles('input.toml') }}
+          path:
+            ~/.cargo
+            target
+          restore-keys:
+            ${{ runner.os }}-
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: knock.${{ matrix.platform }}
+          path: .
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: door.${{ matrix.platform }}
+          path: .
+
+      - run: echo --generate-notes > args.txt
+      - run: chmod -c 0755 *.${{ matrix.platform }}
+      - run: |
+          ./knock.${{ matrix.platform }} --version \
+          | sed -e 's/^.* \([0-9]*\.[0-9]*\.[0-9]*\)/v\1/' -e 's/\(-[0-9]*\).*/\1/' \
+          | tee ver.txt
+      - run: |
+          ver="$(< ver.txt sed -e s/^v//)"
+          if [[ "$(< ver.txt)" =~ - ]]
+          then echo -pt $ver p$ver >> args.txt
+          else echo -t  $ver v$ver >> args.txt
+          fi
+      - run: ls -1 *.${{ matrix.platform }} >> args.txt
+      - run: echo gh release create $(< args.txt)
+      - run: gh release create $(< args.txt)

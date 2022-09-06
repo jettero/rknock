@@ -14,7 +14,7 @@ use syslog::{BasicLogger, Facility, Formatter3164};
 extern crate lru;
 use lru::LruCache;
 
-use clap::{arg, value_parser, App, ArgAction, ValueSource};
+use clap::{arg, crate_authors, crate_version, value_parser, App, ArgAction, ValueSource};
 use config::Config;
 
 use tokio::net::UdpSocket;
@@ -149,9 +149,7 @@ async fn listen_to_msgs(
 }
 
 fn get_args() -> Result<(bool, bool, String, String, String), Box<dyn Error>> {
-    let matches = App::new("door")
-        .version("0.0.0")
-        .author("Paul Miller <paul@jettero.pl>")
+    let matches = App::new("door") .version(crate_version!()) .author(crate_authors!(", "))
         .about("Watches the doors and listens for the secret codes")
         .arg(arg!(syslog: -S --syslog "log events and info to syslog instead of stdout").action(ArgAction::SetTrue))
         .arg(arg!(verbose: -v --verbose "print DEBUG level events instead of INFO").action(ArgAction::SetTrue))

@@ -9,14 +9,23 @@ on:
     inputs: {}
 
 jobs:
+
   test:
-    name: test
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
+      - uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-${{ hashFiles('input.toml') }}
+          path:
+            ~/.cargo
+            target
+          restore-keys:
+            ${{ runner.os }}-
 
       - run: make Cargo.toml
 

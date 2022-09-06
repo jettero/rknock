@@ -1,6 +1,11 @@
+
+# don't accidentally track cargo build/test/run outputs
 /target
+
+# in .github/workflows/*.yaml, I tell the jobs to store cargo dumpsters here
+/cargo
+
 /.last
-/wtf
 
 # have to generate this since cargo doesn't do any scm thinking at all even via
 # plugins
@@ -12,10 +17,16 @@
 /Cargo.lock
 
 
-# Added by cargo
-#
-# already existing elements were commented out
+# other forgettable files I seem habitually to create
+file
+file[0-9]
+file.*
+file-?[0-9]*
 
-#/target
-#/Cargo.lock
-/file
+wtf
+wtf.*
+wtf-?[0-9]*
+
+/.last-action*
+
+# --- sometimes cargo adds stuff below this line and I don't notice ---

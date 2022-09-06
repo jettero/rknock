@@ -9,20 +9,31 @@ on:
     inputs: {}
 
 jobs:
+
   test:
     uses: ./.github/workflows/test.yaml
+
   build:
-    name: build
     runs-on: ubuntu-latest
     container: jettero/kersplat:1.0.28
 
     env:
       GITHUB_TOKEN: ${{ github.token }}
+
     needs: test
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
+      - uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-${{ hashFiles('input.toml') }}
+          path:
+            ~/.cargo
+            target
+          restore-keys:
+            ${{ runner.os }}-
 
       - name: 'workaround for https://github.com/actions/checkout/issues/760'
         run: 'git config --global --add safe.directory ${GITHUB_WORKSPACE}'
@@ -39,12 +50,15 @@ jobs:
           command: build
           args: --release --target x86_64-unknown-linux-gnu
 
+      - run: mv target/x86_64-unknown-linux-gnu/release/door door.x86_64-linux-gnu
+      - run: mv target/x86_64-unknown-linux-gnu/release/knock knock.x86_64-linux-gnu
+
       - uses: actions/upload-artifact@v3
         with:
           name: door.x86_64-linux-gnu
-          path: target/x86_64-unknown-linux-gnu/release/door
+          path: door.x86_64-linux-gnu
 
       - uses: actions/upload-artifact@v3
         with:
           name: knock.x86_64-linux-gnu
-          path: target/x86_64-unknown-linux-gnu/release/knock
+          path: knock.x86_64-linux-gnu

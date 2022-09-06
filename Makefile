@@ -77,3 +77,11 @@ target/release/%: src/%.rs src/lib.rs Cargo.toml
 	sudo install -o 0 -g 0 -m 0755 -v $< $@
 
 install: /usr/bin/rknock /usr/bin/rk_door
+
+watch-run: last-action
+	gh run watch $$(< .last-action)
+
+workflow-run-% run-workflow-% actions-% action-%: .github/workflows/%.yaml
+	gh workflow run $*
+	@echo wait around for 5 seconds
+	@+make --no-print-directory watch-run

@@ -35,9 +35,7 @@ impl Pfft for App<'_> {
 }
 
 fn get_args() -> Result<(bool, bool, String, String, bool, u64), Box<dyn Error>> {
-    let matches = App::new("knock")
-        .version(crate_version!())
-        .author(crate_authors!(", "))
+    let matches = App::new("knock") .version(crate_version!()) .author(crate_authors!(", "))
         .about("Knocks on doors")
         .arg(arg!(verbose: -v --verbose "say what's happening on stdout").action(ArgAction::SetTrue))
         .arg(
