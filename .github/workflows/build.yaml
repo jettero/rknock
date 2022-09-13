@@ -20,6 +20,11 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ github.token }}
 
+    strategy:
+      matrix:
+        platform:
+          - x86_64-linux-gnu
+
     needs: test
     steps:
       - uses: actions/checkout@v2
@@ -48,17 +53,17 @@ jobs:
         with:
           use-cross: yes
           command: build
-          args: --release --target x86_64-unknown-linux-gnu
+          args: --release --target ${{ matrix.platform }}
 
-      - run: mv target/x86_64-unknown-linux-gnu/release/door door.x86_64-linux-gnu
-      - run: mv target/x86_64-unknown-linux-gnu/release/knock knock.x86_64-linux-gnu
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: door.x86_64-linux-gnu
-          path: door.x86_64-linux-gnu
+      - run: mv target/x86_64-unknown-linux-gnu/release/door door.${{ matrix.platform }}
+      - run: mv target/x86_64-unknown-linux-gnu/release/knock knock.${{ matrix.platform }}
 
       - uses: actions/upload-artifact@v3
         with:
-          name: knock.x86_64-linux-gnu
-          path: knock.x86_64-linux-gnu
+          name: door.${{ matrix.platform }}
+          path: door.${{ matrix.platform }}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: knock.${{ matrix.platform }}
+          path: knock.${{ matrix.platform }}
