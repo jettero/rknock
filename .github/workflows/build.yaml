@@ -23,7 +23,8 @@ jobs:
     strategy:
       matrix:
         platform:
-          - x86_64-linux-gnu
+          - target: x86_64-unknown-linux-gnu
+            name: x86_64-linux-gnu
 
     needs: test
     steps:
@@ -53,10 +54,10 @@ jobs:
         with:
           use-cross: yes
           command: build
-          args: --release --target ${{ matrix.platform }}
+          args: --release --target ${{ matrix.platform.target }}
 
-      - run: mv target/x86_64-unknown-linux-gnu/release/door door.${{ matrix.platform }}
-      - run: mv target/x86_64-unknown-linux-gnu/release/knock knock.${{ matrix.platform }}
+      - run: mv target/${{ matrix.platform.target }}/release/door door.${{ matrix.platform.name }}
+      - run: mv target/${{ matrix.platform.target }}/release/knock knock.${{ matrix.platform.name }}
 
       - uses: actions/upload-artifact@v3
         with:
