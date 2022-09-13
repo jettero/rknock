@@ -26,11 +26,14 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             name: x86_64-linux-gnu
 
-          - target: x86_64-apple-darwin
-            name: x86_64-apple-darwin
+          # apple-darwin builds just aren't going to work without some prety
+          # major changes to kersplat or possibly using some other base image.
 
-          - target: aarch64-apple-darwin
-            name: aarch64-apple-darwin
+          # - target: x86_64-apple-darwin
+          #   name: x86_64-apple-darwin
+
+          # - target: aarch64-apple-darwin
+          #   name: aarch64-apple-darwin
 
     needs: test
     steps:
