@@ -1,6 +1,7 @@
 VERSION   := $(shell git describe --dirty --tags --match 'v[0-9][.]*' | sed -e s/^v// -e s/-g/-/)
 GIT_DIR   := $(shell git rev-parse --git-dir)
 HEADS     := $(GIT_DIR)/HEAD $(shell git show-ref --heads --tags | sed -e 's,.* ,$(GIT_DIR)/,')
+PREFIX    := /usr
 
 default: test
 
@@ -70,13 +71,13 @@ target/debug/%: src/%.rs src/lib.rs Cargo.toml
 target/release/%: src/%.rs src/lib.rs Cargo.toml
 	cargo build --bin $* --release
 
-/usr/bin/rknock: target/release/knock
+%/bin/rknock: target/release/knock
 	sudo install -o 0 -g 0 -m 0755 -v $< $@
 
-/usr/bin/rk_door: target/release/door
+%/bin/rk_door: target/release/door
 	sudo install -o 0 -g 0 -m 0755 -v $< $@
 
-install: /usr/bin/rknock /usr/bin/rk_door
+install: $(PREFIX)/bin/rknock $(PREFIX)/bin/rk_door
 
 watch-run: last-action
 	gh run watch $$(< .last-action)
