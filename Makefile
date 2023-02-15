@@ -1,7 +1,7 @@
 VERSION   := $(shell git describe --dirty --tags --match 'v[0-9][.]*' | sed -e s/^v// -e s/-g/-/)
 GIT_DIR   := $(shell git rev-parse --git-dir)
 HEADS     := $(GIT_DIR)/HEAD $(shell git show-ref --heads --tags | sed -e 's,.* ,$(GIT_DIR)/,')
-PREFIX    := /usr
+PREFIX    := /usr/local
 
 default: test
 
