@@ -180,8 +180,13 @@ fn main() -> ExitCode {
         Ok(_) => match socket.send(msg.as_bytes()) {
             Ok(_) => {
                 if go {
-                    let err = execvp("ssh", &["ssh", &target]);
-                    eprintln!("execvp(ssh {target}) error: {err:?}");
+                    let target_parts: Vec<&str> = target.splitn(2, ':').collect();
+                    let host_part: &str = target_parts[0];
+                    if verbose {
+                        println!("execvp(ssh {host_part})");
+                    }
+                    let err = execvp("ssh", &["ssh", &host_part]);
+                    eprintln!("execvp(ssh {host_part}) error: {err:?}");
                     return ExitCode::from(1);
                 }
                 ExitCode::from(0)
